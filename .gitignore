@@ -1,3 +1,7 @@
+# build files
+*.out
+
+# vim swap files
 *.swp
 *.swm
 *.swn
