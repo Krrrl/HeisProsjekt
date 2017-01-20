@@ -7,12 +7,11 @@ A little guide for writing D when you actually want to write C
 Design Documentation
 
 Diagrams
+* [Distributed system](https://www.draw.io/#G0B19Csg1EfTlwTHZhemxQSC1YUjA)
 
-[Distributed system](https://www.draw.io/#G0B19Csg1EfTlwTHZhemxQSC1YUjA)
+* [Master state machine](https://www.draw.io/#G0B19Csg1EfTlwMDM2NUYzbXBtcjQ)
 
-[Master state machine](https://www.draw.io/#G0B19Csg1EfTlwMDM2NUYzbXBtcjQ)
+* [Slave state machine]
 
-[Slave state machine]
-
-[Independant state machine]
+* [Independant state machine]
 
