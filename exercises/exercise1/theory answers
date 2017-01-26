@@ -1,0 +1,31 @@
+Concurrency: the ability of having multiple problems be solved at the same time. they do not have to run simultaneously 
+Parallellism: two problems/threads running at the same time
+The difference is that parallellism is running stuff simultaneously, while concurrency is the ability to safely run several problems, sometimes in parallell.
+
+Machines have become increasingly multicore because of two reasons:
+	- the performance from atomic execution time is not gaining much increase anymore, so increase in performance calls for parallell computing, which requires multicore
+	- the need for concurrent systems for multithread systems is growing with the increasing need for complexity. this calls for parallell computing to keep performance up when handling many threads.
+
+Concurrent execution solves:
+	- having several jobs running at the same time (can you imagine having an OS that could only run one task at one time?)
+	- taking use of multicore to gain a performance increase
+	- avoiding hang ups/freezes by being able to run a safety framework in the background/tandem
+
+Concurrent programming makes it easier to make complex systems, but harder to maintain/debug them
+
+process		a job running on a system capable of concurrently running multiple jobs, can consist of multiple threads
+green thread	a thread that is part of a runtime library of VM, in other words, a sub-job part of a larger job
+coroutine	a job that runs cooperatively with other jobs by explicitely telling the system when the coroutine returns execution to its parent
+
+
+pthread_create() in C creates a system thread 
+threading.Thread() in Python creates a thread. It is not a green thread, since it is based on the _thread modules which again uses POSIX threads (in other words, threads run by the OS).
+go threads can be considered green, as they are multiplexed to run on OS threads
+
+Pythons Global Interpreter Lock forces a python process to only run one thread. the thread must finish before a new one can open
+
+The workaround to have multiple threads run concurrently is f.ex using the greenlet module, which simulates threads in user space and thus can take care of thread switching in a safe manner
+
+func GOMAXPROCS(n int) int changes the maximum allowed system level threads that the go process can run simultaneously.
+
+

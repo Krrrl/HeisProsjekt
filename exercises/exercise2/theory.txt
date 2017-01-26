@@ -1,0 +1,4 @@
+atomic operation: a signle uninterruptible operation, able to read and write in a single bus operation
+semaphore: a signaling system for taking and giving back resources
+mutex: a lock on a resource
+critical section: the part of a program that is included in the lock
