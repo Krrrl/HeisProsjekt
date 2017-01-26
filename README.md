@@ -8,7 +8,10 @@
 
 ##### Diagrams
 * [Distributed system](https://www.draw.io/#G0B19Csg1EfTlwTHZhemxQSC1YUjA)
-* [Master state machine](https://www.draw.io/#G0B19Csg1EfTlwMDM2NUYzbXBtcjQ)
+* [Master state machine](https://drive.google.com/file/d/0BzwZfpAEDrdATFJ4OHRpWERoYTQ/view?usp=sharing)
 * [Slave state machine]
+- [Control states of an elevator](https://drive.google.com/file/d/0BzwZfpAEDrdAZVRpbDFJRjBrclk/view?usp=sharing)
+- [Physical states of an elevator] (https://drive.google.com/file/d/0BzwZfpAEDrdAVHYyZ0RXRDllaTQ/view?usp=sharing)
+
 * [Independant state machine]
 
