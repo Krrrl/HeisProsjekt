@@ -64,31 +64,5 @@ struct heartBeat
 	int currentFloor;
 }
 
-
-
-
-messageThread()
-{
-	if delegateOrder
-	{
-		send(keeperOfSets, delegateOrder);
-		debug
-		{
-		writeln(delegateOrder);
-		}
-	}
-	
-	else if confirmOrder
-	{
-		send(keeperOfSets, confirmOder);
-		debug
-		{
-		
-		}
-	}
 	
 	
-	
-	
-	
-}

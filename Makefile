@@ -1,11 +1,10 @@
 # TOP is set to the same path as the makefile
 TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 
-SRC_DIR = ./src/
-#OBJS = test.o
+SRC_DIR = ${TOP}src
 
 make:
-	gdc ${TOP}src/test.d
+	dmd ${SRC_DIR}/main.d ${SRC_DIR}/messenger.d ${SRC_DIR}/keeperOfSets.d
 
 clean:
 	rm *.out
