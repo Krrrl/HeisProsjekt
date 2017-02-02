@@ -5,3 +5,6 @@
 *.swp
 *.swm
 *.swn
+
+#gedit swap files
+*~
