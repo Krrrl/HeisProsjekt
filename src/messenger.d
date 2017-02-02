@@ -1,52 +1,49 @@
-/*
-imports
+import std.stdio,
+	   std.concurrency,
+	   std.conv,
+	   std.variant,
+	   core.thread,
+	   core.time;
+	  
+	  
+import main,
+	   udp_bcast,
+	   peers;
+	   
+typedef enum {INIT = 0, IDLE = 1, GOING_DOWN = 2, GOING_UP = 3, FLOORSTOP = 4} state_t; 
+//TODO flyttes til statemachine
 
-define delegateOrder struct:
-	{
-		target ID : int
-		order	  : string
-	}
-	
-	
-define confirmOrder struct:
-	{
-		sender ID : int
-		order	  : string
-	}
-
-define expediteOrder struct:
-	{
-		sender ID : int
-		order	  : string
-	}
-
-define syncRequest struct:
-	{
-		sender ID : int
-	}
-
-define heartBeat Struct:
-	{
-		sender ID : int
-		sender State : state_t
-		sender Floor : int
-	}
-
-*/
-
-struct delegateOrder
+struct outgoingDelegateOrder
 {
 	int targetID;
 	string order;
 }
 
-struct confirmOrder
+struct incomingDelegateOrder
+{
+	int targetID;
+	string order;
+}
+
+struct outgoingConfirmOrder
 {
 	int senderID;
 	string order;
 }
 
-struct expediteOrder
+struct incomingConfirmOrder
+{
+	int senderID;
+	string order;
+}
+
+struct outgoingExpediteOrder
+{
+	int senderID;
+	string order;
+}
+
+struct incomingExpediteOrder
 {
 	int senderID;
 	string order;
@@ -57,38 +54,75 @@ struct syncRequest
 	int senderID;
 }
 
-struct heartBeat
+struct heartbeat
 {
 	int senderID;
-	int currentState; //change to state_t when implemented
+	state_t currentState; //change to state_t when implemented
 	int currentFloor;
 }
 
-
-
-
-messageThread()
+void delegateOnNetwork(int targetID, string order)
 {
-	if delegateOrder
-	{
-		send(keeperOfSets, delegateOrder);
-		debug
-		{
-		writeln(delegateOrder);
-		}
-	}
-	
-	else if confirmOrder
-	{
-		send(keeperOfSets, confirmOder);
-		debug
-		{
-		
-		}
-	}
-	
-	
-	
-	
-	
+	bcast.send(outgoingDelegateOrder(targetID, order));
 }
+
+void confirmOnNetwork(string order)
+{
+	bcast.send(outgoingConfirmOrder(myID, order));
+}
+
+void expediteOnNetwork(string order)
+{
+	bcast.send(outgoingConfirmOrder(myID, order));
+}
+
+void heartbeatOnNetwork(state_t currentState, int currentFloor)
+{
+	bcast.send(heartbeat(myID, currentState, currentFloor));
+}
+
+
+void messageThread()
+{
+	while(true)
+	{
+		receive
+		(			
+			(delegateOrder a)
+			{
+			send(keeperOfSetsTID, a);
+			debug writeln("received delegateOrder: ", a.order);
+			}
+			(confirmOrder a)
+			{
+			send(keeperOfSetsTID, a);
+			debug writeln("receive confirmOrder: ", a.order);
+			}
+			(expediteOrder a)
+			{
+			send(keeperOfSetsTID, a);
+			debug writeln("received expediteOrder: ", a.order);
+			}
+			(syncRequest a)
+			{
+			send(keeperOfSetsTID, a);
+			debug writeln("received syncRequest from: ", a.senderID);
+			}
+			(heartBeat a)
+			{
+			send(keeperOfSetsTID, a);
+			debug writeln("received heartBeat: ", a.senderID);
+			}
+		);
+	}
+}
+
+
+
+
+
+
+
+
+
+
