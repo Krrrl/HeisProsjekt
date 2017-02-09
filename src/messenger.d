@@ -88,17 +88,17 @@ void messageThread()
 	{
 		receive
 		(			
-			(delegateOrder a)
+			(incomingDelegateOrder a)
 			{
 			send(keeperOfSetsTID, a);
 			debug writeln("received delegateOrder: ", a.order);
 			}
-			(confirmOrder a)
+			(incomingConfirmOrder a)
 			{
 			send(keeperOfSetsTID, a);
 			debug writeln("receive confirmOrder: ", a.order);
 			}
-			(expediteOrder a)
+			(incomingExpediteOrder a)
 			{
 			send(keeperOfSetsTID, a);
 			debug writeln("received expediteOrder: ", a.order);
