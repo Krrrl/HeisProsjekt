@@ -30,9 +30,6 @@ void main(string[] args)
 	if(args.length > 1){
 		id = args[1].to!ubyte;
 	}
-
-	nrOfPeers = 2;
-	nrOfFloors = 4;
 	//init
 	//instansier channelsan til keeperOfSets
 	//spawn keeperOfSets
@@ -76,7 +73,8 @@ void main(string[] args)
 }
 
 
-void messageThread(shared NonBlockingChannel!order toNetworkChn, shared NonBlockingChannel!order toElevatorChn, Tid bcast)
+void messageThread(shared NonBlockingChannel!order toNetworkChn, 
+					shared NonBlockingChannel!order toElevatorChn, Tid bcast)
 {
 	order receivedToNetworkOrder;
 	order receivedToElevatorOrder;
