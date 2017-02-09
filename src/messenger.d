@@ -116,13 +116,3 @@ void messageThread()
 		);
 	}
 }
-
-
-
-
-
-
-
-
-
-
