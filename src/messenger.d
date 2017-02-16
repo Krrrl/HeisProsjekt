@@ -45,6 +45,8 @@ void messageThread(shared NonBlockingChannel!order toNetworkChn,
 			networkTid.send(receivedToNetworkOrder);
 
 
+
+        // Only the network thread uses receive
 		receive(
 			(order a)
 		{

@@ -61,7 +61,7 @@ void main(string[] args)
 
 	while (true)
 	{
-		//??
+        // Check that the threads are still running, and if not restart either the thread or the whole program?
 	}
 
 }
