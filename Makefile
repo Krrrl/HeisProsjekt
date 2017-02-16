@@ -5,8 +5,11 @@ CFLAGS = -std=gnu11 -g -Wall -Wextra
 
 # Which D compiler to use
 DD = dmd
+# D compiler flags
+DFLAGS = -g
 # Linker flags
 LDFLAGS = -lcomedi -lm
+COMEDILIB = /usr/lib/libcomedi.a
 
 # TOP is set to the same path as the makefile
 TOP := $(dir $(lastword $(MAKEFILE_LIST)))
@@ -31,10 +34,20 @@ TARGET = best_elevator
 
 # Make rules begin here
 
-make: cDriver $(D_SRC)
-	$(DD) $(ALL_SRC_FILES) $(CLIB_OBJ) #-offilename $(TARGET)
+# I tried to explain some syntax for rules here:
+# ruleNamE: [any dependencies (optional!)]
+# 	after rule:dependencies the lines must be indented (with TAB, spaces are not accepted)
+# 	every indented line is a command that is executed when the rule is run
+# 	to run a specific rule: $ make ruleName
+#	dependencies can be other rules, then the other rules are run before this one
+#	dependencies can be also be variables like CLIB_OBJ below, then the rule corresponing to the variable is run
+#	when dependencies are variables/'lists of files', make scans the files and checks if they have been changed. it will only run the rule corresponing to the dependency if they have changed.
+#	running: $ make , without any argument either starts the 'all' rule or start at the top rule
 
-cDriver: $(CLIB_SRC)
+build: $(CLIB_OBJ) $(D_SRC)
+	$(DD) $(ALL_SRC_FILES) $(CLIB_OBJ) $(COMEDILIB) #-offilename $(TARGET)
+
+$(CLIB_OBJ): $(CLIB_SRC)
 	@echo "Compiling elevator driver object files... "
 	for file in $(CLIB_FILES); do \
 		$(CC) $(CFLAGS) -c $$file.c -o $$file.o ; \
