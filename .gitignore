@@ -10,3 +10,6 @@
 *~
 
 tags
+
+# C object files
+*.o
