@@ -6,7 +6,7 @@ CFLAGS = -std=gnu11 -g -Wall -Wextra
 # Which D compiler to use
 DD = dmd
 # D compiler flags
-DFLAGS = -g
+DFLAGS = -g -odbuild -of$(TARGET)
 # Linker flags
 LDFLAGS = -lcomedi -lm
 COMEDILIB = /usr/lib/libcomedi.a # TODO: check if this works on all computers
@@ -45,7 +45,7 @@ TARGET = best_elevator
 #	running: $ make , without any argument either starts the 'all' rule or starts at the top rule
 
 build: $(CLIB_OBJ) $(D_SRC)
-	$(DD) $(ALL_SRC_FILES) $(CLIB_OBJ) $(COMEDILIB) #-offilename $(TARGET)
+	$(DD) $(DFLAGS) $(ALL_SRC_FILES) $(CLIB_OBJ) $(COMEDILIB) 
 
 $(CLIB_OBJ): $(CLIB_SRC)
 	@echo "Compiling elevator driver object files... "
@@ -54,6 +54,7 @@ $(CLIB_OBJ): $(CLIB_SRC)
 	done
 
 clean:
+	rm -r ./build
 	rm $(CLIB_OBJ) $(TARGET)
 
 test:

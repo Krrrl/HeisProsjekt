@@ -1,4 +1,6 @@
-/* Import C functions from elev.h lib */
+/*  Declare external C enums and functions from elev.h lib
+    dmd will be happy as long as they are declared correctly
+*/
 
 enum elev_motor_direction_t { 
     DIRN_DOWN = -1,
