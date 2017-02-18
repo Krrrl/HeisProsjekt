@@ -20,7 +20,10 @@ void main(string[] args)
     ubyte id;
 
 	if (args.length > 1)
+    {
         id = parse!ubyte(args[1]);
+    }
+        
     //id = args[1].to!(ubyte);
 
 	//init
@@ -58,10 +61,40 @@ void main(string[] args)
 	//spawn watchdog
 	//spawn io-dude
 
+    // Start io-lib; possibly with simulator
+    elev_type ioInterface = elev_type.ET_Comedi;
+
+    if (args.length > 2)
+    {
+        if (args[2] == "sim")
+        {
+            ioInterface  = elev_type.ET_Simulation;
+        }
+    }
+    elev_init(ioInterface);
+    
+
+        elev_set_motor_direction(elev_motor_direction_t.DIRN_UP);
 
 	while (true)
 	{
+        if (elev_get_floor_sensor_signal == 3)
+        {
+            debug writeln("reached floor 4");
+            elev_set_motor_direction(elev_motor_direction_t.DIRN_DOWN);
+        }
+
+        if (elev_get_floor_sensor_signal == 0)
+        {
+            debug wirteln("reached floor 1");
+            elev_set_motor_direction(elev_motor_direction_t.DIRN_UP);
+        }
+
+
+
         // Check that the threads are still running, and if not restart either the thread or the whole program?
 	}
+
+
 
 }

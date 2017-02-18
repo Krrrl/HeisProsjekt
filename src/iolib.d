@@ -1,5 +1,4 @@
 /*  Declare external C enums and functions from elev.h lib
-    dmd will be happy as long as they are declared correctly
 */
 
 enum elev_motor_direction_t { 
@@ -15,7 +14,7 @@ enum elev_button_type_t {
 }
 
 enum elev_type {
-    ET_Comedi,
+    ET_Comedi = 0,
     ET_Simulation
 }
 
