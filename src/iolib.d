@@ -14,8 +14,12 @@ enum elev_button_type_t {
     BUTTON_COMMAND = 2
 }
 
+enum elev_type {
+    ET_Comedi,
+    ET_Simulation
+}
 
-extern (C) void elev_init();
+extern (C) void elev_init(elev_type e);
 
 extern (C) void elev_set_motor_direction(elev_motor_direction_t dirn);
 extern (C) void elev_set_button_lamp(elev_button_type_t button, int floor, int value);

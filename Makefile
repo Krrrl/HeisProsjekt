@@ -6,9 +6,9 @@ CFLAGS = -std=gnu11 -g -Wall -Wextra
 # Which D compiler to use
 DD = dmd
 # D compiler flags
-DFLAGS = -g -odbuild -of$(TARGET)
+DFLAGS = -g -odbuild 
 # Linker flags
-LDFLAGS = -lcomedi -lm
+LDFLAGS = -Lcomedi
 COMEDILIB = /usr/lib/libcomedi.a # TODO: check if this works on all computers
 
 # TOP is set to the same path as the makefile
@@ -18,12 +18,14 @@ TOP := $(dir $(lastword $(MAKEFILE_LIST)))
 D_SRC_DIR = ${TOP}src/
 CLIB_DIR = ${TOP}driver/
 NET_DIR = $(TOP)Network-D/net/
+SIM_DIR = $(TOP)simulator/server/
 
 # Source files
 D_SRC = $(wildcard $(D_SRC_DIR)*.d)
 CLIB_SRC = $(wildcard $(CLIB_DIR)*.c)
 CHANNELS_SRC = $(TOP)channels/channels.d
 NET_SRC = $(wildcard $(NET_DIR)*.d) $(NET_DIR)d-json/jsonx.d
+SIM_SRC = $(wildcard $(SIM_DIR)*.d)
 ALL_SRC_FILES = $(D_SRC) $(CHANNELS_SRC) $(NET_SRC)
 
 # Object files
@@ -31,6 +33,7 @@ CLIB_OBJ = $(CLIB_SRC:.c=.o)
 CLIB_FILES = $(CLIB_SRC:.c=)
 
 TARGET = best_elevator
+SIM_TARGET = sim_server
 
 # Make rules begin here
 
@@ -44,8 +47,8 @@ TARGET = best_elevator
 #	when dependencies are variables/'lists of files', make scans the files and checks if they have been changed. it will only run the rule corresponing to the dependency if they have changed.
 #	running: $ make , without any argument either starts the 'all' rule or starts at the top rule
 
-build: $(CLIB_OBJ) $(D_SRC)
-	$(DD) $(DFLAGS) $(ALL_SRC_FILES) $(CLIB_OBJ) $(COMEDILIB) 
+build: $(CLIB_OBJ) $(D_SRC) $(SIM_TARGET)
+	$(DD) $(DFLAGS) $(ALL_SRC_FILES) $(CLIB_OBJ) $(COMEDILIB) -of$(TARGET) 
 
 $(CLIB_OBJ): $(CLIB_SRC)
 	@echo "Compiling elevator driver object files... "
@@ -53,9 +56,12 @@ $(CLIB_OBJ): $(CLIB_SRC)
 		$(CC) $(CFLAGS) -c $$file.c -o $$file.o ; \
 	done
 
+$(SIM_TARGET):
+	$(DD) $(DFLAGS) $(SIM_SRC) -of$(SIM_TARGET)
+
 clean:
 	rm -r ./build
-	rm $(CLIB_OBJ) $(TARGET)
+	rm $(CLIB_OBJ) $(TARGET) $(SIM_TARGET)
 
 test:
 	@echo "TOP =" $(TOP)
