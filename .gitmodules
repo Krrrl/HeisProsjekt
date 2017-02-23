@@ -4,3 +4,6 @@
 [submodule "channels"]
     path = channels
     url = https://github.com/torje/channels
+[submodule "Exercises"]
+	path = exercises/Exercises
+	url = https://github.com/TTK4145/Exercises
