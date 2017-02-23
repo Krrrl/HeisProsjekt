@@ -35,6 +35,12 @@ struct order
 void messageThread(shared NonBlockingChannel!order toNetworkChn,
 		   shared NonBlockingChannel!order toElevatorChn, Tid networkTid)
 {
+    debug
+    {
+        writeln("    [x] messageThread");
+    }
+
+
 	order receivedToNetworkOrder;
 	order receivedToElevatorOrder;
 
@@ -42,14 +48,19 @@ void messageThread(shared NonBlockingChannel!order toNetworkChn,
 	{
 
 		if (toNetworkChn.extract(receivedToNetworkOrder))
-			networkTid.send(receivedToNetworkOrder);
+        {
+            debug writeln("messenger: passing order to network");
+			//networkTid.send(receivedToNetworkOrder);
+        }
 
 
 
         // Only the network thread uses receive
-		receive(
+		receiveTimeout(
+            msecs(1),
 			(order a)
 		{
+        debug writeln("messenger: received order");
 			toElevatorChn.insert(a);
 		}
 			);

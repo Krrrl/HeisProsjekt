@@ -1,3 +1,5 @@
+import std.stdio;
+
 import messenger,
        channels;
 
@@ -17,6 +19,11 @@ void keeperOfSetsThread(shared NonBlockingChannel!order toNetworkChn,
 			shared NonBlockingChannel!order watchdogFeedChn,
 			shared NonBlockingChannel!string locallyPlacedOrdersChn)
 {
+    debug
+    {
+        writeln("    [x] keeperOfSetsThread");
+    }
+
 	order receivedFromNetwork;
 	string localOrderInstance;
 
@@ -25,7 +32,7 @@ void keeperOfSetsThread(shared NonBlockingChannel!order toNetworkChn,
 		if (toElevatorChn.extract(receivedFromNetwork))
 		{
             debug {
-                write("keeperOfSets: received ");
+                writeln("keeperOfSets: received ");
                 //printOrder(receivedFromNetwork);
             }
 
