@@ -121,11 +121,9 @@ void main(string[] args)
 
         debug writeln("main: Heartbeat");
 
-        Thread.getThis().sleep(msecs(200));
+        Thread.getThis().sleep(msecs(10));
 
         toNetworkChn.insert(a);
-
-
 
 
         // Check that the threads are still running, and if not restart either the thread or the whole program?

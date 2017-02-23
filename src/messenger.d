@@ -32,40 +32,44 @@ struct order
 	int timestamp;
 }
 
-void messageThread(shared NonBlockingChannel!order toNetworkChn,
-		   shared NonBlockingChannel!order toElevatorChn, Tid networkTid)
+void messageThread(
+        ref shared NonBlockingChannel!order toNetworkChn,
+        ref shared NonBlockingChannel!order toElevatorChn,
+        Tid networkTid
+        )
 {
     debug
     {
         writeln("    [x] messageThread");
     }
 
-
 	order receivedToNetworkOrder;
 	order receivedToElevatorOrder;
 
 	while (true)
 	{
-
 		if (toNetworkChn.extract(receivedToNetworkOrder))
         {
             debug writeln("messenger: passing order to network");
-			//networkTid.send(receivedToNetworkOrder);
+			send(networkTid, 100);
         }
-
-
 
         // Only the network thread uses receive
 		receiveTimeout(
             msecs(1),
 			(order a)
-		{
-        debug writeln("messenger: received order");
-			toElevatorChn.insert(a);
-		}
-			);
+            {
+                debug writeln("messenger: received order");
+                debug writeln(a.orderDeclaration);
+                //toElevatorChn.insert(a);
+            },
+            (Variant v)
+            {
+                debug writeln("woot");
+            }
+        );
 
-		//TODO connection-lost scenario/handling?
+		//TODO: connection-lost scenario/handling?
 	}
 }
 
