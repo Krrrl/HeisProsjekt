@@ -6,7 +6,7 @@ CFLAGS = -std=gnu11 -g -Wall -Wextra
 # Which D compiler to use
 DD = dmd
 # D compiler flags
-DFLAGS = -debug -odbuild 
+DFLAGS = -debug -odbuild -g
 # Linker flags
 LDFLAGS = -Lcomedi
 COMEDILIB = /usr/lib/libcomedi.a # TODO: check if this works on all computers
