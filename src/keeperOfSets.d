@@ -3,20 +3,10 @@ import std.stdio;
 import messenger,
        channels;
 
-// Karl: NB MERGED MED DELEGATOR
 
-enum state_t
-{
-	INIT = 0,
-	IDLE,
-	GOING_DOWN,
-	GOING_UP,
-	FLOORSTOP
-}
-
-void keeperOfSetsThread(shared NonBlockingChannel!order toNetworkChn,
-			shared NonBlockingChannel!order toElevatorChn,
-			shared NonBlockingChannel!order watchdogFeedChn,
+void keeperOfSetsThread(shared NonBlockingChannel!order_t toNetworkChn,
+			shared NonBlockingChannel!order_t toElevatorChn,
+			shared NonBlockingChannel!order_t watchdogFeedChn,
 			shared NonBlockingChannel!string locallyPlacedOrdersChn)
 {
     debug
@@ -24,7 +14,7 @@ void keeperOfSetsThread(shared NonBlockingChannel!order toNetworkChn,
         writeln("    [x] keeperOfSetsThread");
     }
 
-	order receivedFromNetwork;
+	order_t receivedFromNetwork;
 	string localOrderInstance;
 
 	while (true)
@@ -35,7 +25,7 @@ void keeperOfSetsThread(shared NonBlockingChannel!order toNetworkChn,
                 writeln("keeperOfSets: received ");
                 //printOrder(receivedFromNetwork);
             }
-
+/*
 			switch (receivedFromNetwork.type)
 			{
                 case order_header_t.delegateOrder:
@@ -68,12 +58,13 @@ void keeperOfSetsThread(shared NonBlockingChannel!order toNetworkChn,
                 default:
                     //discard message
 			}
+            */
 		}
 		//orders from IO
 		//Delegate, then post to toNetwork
 		if (locallyPlacedOrdersChn.extract(localOrderInstance))
 		{
-			//order = delegateOrder(localOrderInstance);
+			//order_t = delegateOrder(localOrderInstance);
 
 		}
 	}
