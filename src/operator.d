@@ -52,7 +52,7 @@ void operatorThread(
     Thread.sleep(seconds(1));
 
 	// Construct prevState for all buttons
-	bool[3][main.nrOfFloors] buttonPrevMatrix = false;
+	bool[main.nrOfFloors][3] buttonPrevMatrix = false;
 
 	while (true)
 	{
