@@ -32,13 +32,11 @@ void main(string[] args)
     }
 
 	// channel fra messenger til keeper
-	shared NonBlockingChannel!order_t toElevatorChn = new NonBlockingChannel!order_t;
+	shared NonBlockingChannel!message_t toElevatorChn = new NonBlockingChannel!message_t;
 	// channel fra Keeper til network
-	shared NonBlockingChannel!order_t toNetworkChn = new NonBlockingChannel!order_t;
+	shared NonBlockingChannel!message_t toNetworkChn = new NonBlockingChannel!message_t;
 	// channel mellom watchdog og Keeper
-	shared NonBlockingChannel!order_t watchdogFeedChn = new NonBlockingChannel!order_t;
-	// channel mellom I/O og Keeper
-	shared NonBlockingChannel!string locallyPlacedOrdersChn = new NonBlockingChannel!string;
+	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
 
 	debug writeln("Initializing lift hardware ...");
 	elev_type ioInterface = elev_type.ET_Comedi;
@@ -60,13 +58,13 @@ void main(string[] args)
 	Tid keeperOfSetsTid;
 	Tid watchdogTid;
     Tid operatorTid;
+    Tid delegatorTid;
 
 	keeperOfSetsTid = spawn(
 		&keeperOfSetsThread,
 		toNetworkChn,
 		toElevatorChn,
-		watchdogFeedChn,
-		locallyPlacedOrdersChn);
+		watchdogFeedChn);
 
 	messengerTid = spawn(
 		&messengerThread,
@@ -79,13 +77,17 @@ void main(string[] args)
 		watchdogFeedChn,
 		toNetworkChn,
 		toElevatorChn,
-        locallyPlacedOrdersChn, // watchdog puts orphaned orders in this channel
 		id);
 
     operatorTid = spawn(
         &operatorThread,
         toElevatorChn,
         toNetworkChn);
+
+    delegatorTid = spawn(
+            &delegatorThread,
+            toElevatorChn,
+            id);
 
 	Tid peerTx = peers.init;
 
