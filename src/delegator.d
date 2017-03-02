@@ -11,7 +11,7 @@ import channels,
  * @param locallyPlacedOrdersChn: channel with
  */
 void delegatorThread(
-    ref shared NonBlockingChannel!order_t toElevatorChn,
+    ref shared NonBlockingChannel!message_t toElevatorChn,
 	ref shared NonBlockingChannel!string locallyPlacedOrdersChn)
 {
 	string localOrderInstance;
@@ -21,7 +21,7 @@ void delegatorThread(
 		if (locallyPlacedOrdersChn.extract(localOrderInstance))
 		{
              //int bestElevator = findClosestElevator(localOrderInstance); // keeper of sets has information, how to get it?
-            // order_t = 
+            // message_t = 
 
 		}
 	}

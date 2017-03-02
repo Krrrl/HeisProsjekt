@@ -36,13 +36,13 @@ private ext_elevator_t[ubyte] aliveElevators;
 private ext_elevator_t[ubyte] inactiveElevators;
 
 
-order_t confirmOrderToNetwork(string orderDeclaration, main.myID)
+message_t confirmOrderToNetwork(string orderDeclaration, main.myID)
 {
 		
 	
 }
 	
-order_t expediteOrderToNetwork(string orderDeclaration, main.myID)
+message_t expediteOrderToNetwork(string orderDeclaration, main.myID)
 {
 	
 	
@@ -124,9 +124,9 @@ void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
 
 
 void keeperOfSetsThread(
-			shared NonBlockingChannel!order_t toNetworkChn,
-			shared NonBlockingChannel!order_t toElevatorChn,
-			shared NonBlockingChannel!order_t watchdogFeedChn)
+			shared NonBlockingChannel!message_t toNetworkChn,
+			shared NonBlockingChannel!message_t toElevatorChn,
+			shared NonBlockingChannel!message_t watchdogFeedChn)
 {
     debug
     {
@@ -196,7 +196,7 @@ void keeperOfSetsThread(
 	
 
 	
-	order_t receivedFromNetwork;
+	message_t receivedFromNetwork;
 	string localOrderInstance;
 
 	while (true)
@@ -246,7 +246,7 @@ void keeperOfSetsThread(
 		//Delegate, then post to toNetwork
 		if (locallyPlacedOrdersChn.extract(localOrderInstance))
 		{
-			//order_t = delegateOrder(localOrderInstance);
+			//message_t = delegateOrder(localOrderInstance);
 
 		}
 	}
