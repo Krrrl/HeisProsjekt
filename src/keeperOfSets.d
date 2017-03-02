@@ -7,86 +7,57 @@ import main,
 
 class ext_elevator_t{
 	public:
-	string upQueue[main.nrOfFloors];
-	string downQueue[main.nrOfFloors];
-	string internalOrders[main.nrOfFloors];
+	int[int] upQueue;
+	int[int] downQueue;
+	int[int] internalOrders;
 	state_t currentState;
 	int currentFloor;
 	int lastTimestamp;
 	ubyte ID;
 }
 	
-enum direction_t
-{
-	DOWN            = 0,
-	UP              = 1,
-	INTERNAL        = 2
-}
+
 
 ubyte findMatch(int orderFloor, direction_t orderDirection)
 {
-	if(orderDirection == "INTERNAL")
+	if(orderDirection == direction_t.INTERNAL)
 		{
-			return messenger.myID;
+			return getMyID();
 		}
-
+	return 0;
 }
-
-
-private int upQueue[main.nrOfFloors];
-private int downQueue[main.nrOfFloors];
-private int internalQueue[main.nrOfFloors];
-public state_t currentState;
-public int currentFloor;
 
 private ext_elevator_t[ubyte] aliveElevators;
 private ext_elevator_t[ubyte] inactiveElevators;
 
 
-message_t confirmOrderToNetwork(string orderDeclaration, messenger.myID)
-{
-	
-}
-	
-message_t expediteOrderToNetwork(string orderDeclaration, messenger.myID)
-{
-
-}
-
-
-string nextInQueue(direction_t)
-{
-
-
-}
-
 void addToList(ubyte targetID, direction_t orderDirection, int orderFloor)
 {
 	switch(orderDirection)
 	{
-		case "DOWN"
+		case direction_t.DOWN:
 		{
-			if(orderFloor (not in) aliveElevators[targetID].downQueue)
+			if(orderFloor !in aliveElevators[targetID].downQueue)
 			{
-				aliveElevators[targetID].downQueue.append(orderFloor);
+				aliveElevators[targetID].downQueue ~= orderFloor;
 			}
 			break;
 		}
 
-		case "UP"
+		case direction_t.UP:
 		{
-			if(orderFloor (not in) aliveElevators[targetID].upQueue)
+			if(orderFloor !in aliveElevators[targetID].upQueue)
 			{
-				aliveElevators[targetID].upQueue.append(orderFloor);
+				aliveElevators[targetID].upQueue ~= orderFloor;
 			}
 			break;
 		}
 
-		case "INTERNAL"
+		case direction_t.INTERNAL:
 		{
-			if(orderFloor (not in) aliveElevators[targetID].internalQueue)
+			if(orderFloor !in aliveElevators[targetID].internalQueue)
 			{
-				aliveElevators[targetID].internalQueue.append(orderFloor);
+				aliveElevators[targetID].internalQueue ~= orderFloor;
 			}
 			break;
 		}
@@ -97,53 +68,58 @@ void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
 {
 	switch(orderDirection)
 	{
-		case "DOWN"
+		case direction_t.DOWN:
 		{
 			if(orderFloor in aliveElevators[targetID].downQueue)
 			{	
-				aliveElevators[targetID].downQueue.append(orderFloor);
+				aliveElevators[targetID].downQueue.remove(orderFloor);
 			}
 			break;
 		}
 
-		case "UP"
+		case direction_t.UP:
 		{
 			if(orderFloor in aliveElevators[targetID].upQueue)
 			{
-				aliveElevators[targetID].upQueue.append(orderFloor);
+				aliveElevators[targetID].upQueue.remove(orderFloor);
 			}	
 			break;
 		}
 
-		case "INTERNAL"
+		case direction_t.INTERNAL:
 		{
 			if(orderFloor in aliveElevators[targetID].internalQueue)
 			{
-				aliveElevators[targetID].internalQueue.append(orderFloor);
+				aliveElevators[targetID].internalQueue.remove(orderFloor);
 			}
 			break;
 		}
 	}
 }
 
-void updateHeartbeat(targetID, state_t currentState, int currentFloor, int timestamp)
+void updateHeartbeat(ubyte targetID, state_t currentState, int currentFloor, int timestamp)
 {
-	aliveElevators[targetID]->currentState = currentState;
-	aliveElevators[targetID]->currentFloor = currentFloor;
-	aliveElevators[targetID]->lastTimestamp = timestamp;
+	aliveElevators[targetID].currentState = currentState;
+	aliveElevators[targetID].currentFloor = currentFloor;
+	aliveElevators[targetID].lastTimestamp = timestamp;
 }
 
-void sendSyncInfo(targetID)
+void sendSyncInfo(ubyte targetID)
+{
+
+}
+
+void syncMySet(int[] internalSet)
 {
 
 }
 
 ubyte highestID()
 {
-	ubyte highestID = messenger.myID;
+	ubyte highestID = getMyID();
 	foreach(elevator; aliveElevators)
 	{
-		if(messenger.myID < elevator.ID)
+		if(getMyID() < elevator.ID)
 		{
 			highestID = elevator.ID;
 		}
@@ -162,55 +138,66 @@ void keeperOfSetsThread(
 		writeln("    [x] keeperOfSetsThread");
 	}
 
+	ext_elevator_t localElevator;
+	aliveElevators[getMyID()] = localElevator;
+
 	message_t receivedFromNetwork;
 
 	while (true)
 	{
 		if(toElevatorChn.extract(receivedFromNetwork))
 		{
-			debug{writeln("Received from toElevChn: ", receivedFromNetwork)};
+			debug{writeln("Received from toElevChn: ", receivedFromNetwork);}
 			switch(receivedFromNetwork.message_header_t)
 			{
-				case delegateOrder
+				case message_header_t.delegateOrder:
 				{
-					if(receivedFromNetwork.targetID == messenger.myID)
+					if(receivedFromNetwork.targetID == getMyID())
 					{
-						addToList(messenger.myID, receivedFromNetwork.orderDirection, receivedFromNetwork.orderFloor);
+						addToList(getMyID(), 
+								receivedFromNetwork.orderDirection, 
+								receivedFromNetwork.orderFloor);
 					}
 					break;
 				}
 
-				case confirmOrder
+				case message_header_t.confirmOrder:
 				{
-					addToList(receivedFromNetwork.senderID, orderDirection, orderFloor);
+					addToList(
+							receivedFromNetwork.senderID,
+							receivedFromNetwork.orderDirection, 
+							receivedFromNetwork.orderFloor);
 					break;
 				}
 
-				case expediteOrder
+				case message_header_t.expediteOrder:
 				{
-					removeFromList(receivedFromNetwork.senderID, orderDirection, orderFloor);
+					removeFromList(
+								receivedFromNetwork.senderID, 
+								receivedFromNetwork.orderDirection, 
+								receivedFromNetwork.orderFloor);
 					break;
 				}
 
-				case syncRequest
+				case message_header_t.syncRequest:
 				{
-					if(messenger.myID == highestID())
+					if(getMyID() == highestID())
 					{
-						//sendSyncInfo(receivedFromNetwork.senderID);
+						sendSyncInfo(receivedFromNetwork.senderID);
 					}
 					break;
 				}
 
-				case syncInfo
+				case message_header_t.syncInfo:
 				{
-					if(messenger.myID == receivedFromNetwork.targetID)
+					if(getMyID() == receivedFromNetwork.targetID)
 					{
-						//syncMySet();
+						syncMySet(receivedFromNetwork.syncInternalList);
 					}
 					break;
 				}
 
-				case heartbeat
+				case message_header_t.heartbeat:
 				{
 					updateHeartbeat(receivedFromNetwork.senderID,
 									receivedFromNetwork.currentState,
@@ -218,6 +205,7 @@ void keeperOfSetsThread(
 									receivedFromNetwork.timestamp);
 					break;
 				}
-			}	
+			}
+		}	
 	}
 }

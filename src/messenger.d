@@ -26,6 +26,13 @@ enum message_header_t
 	heartbeat
 }
 
+enum direction_t
+{
+	DOWN            = 0,
+	UP              = 1,
+	INTERNAL        = 2
+}
+
 /*
  * @brief   Message struct passed internally between threads and externally between elevators
  * @TODO    Jeg mener vi burde kalle meldings structen noe som "message_t", siden den ikke bare inneholder orders, men også heartbeats, syncInfo etc... f.ex: message_t; packet_t;
@@ -36,13 +43,20 @@ struct message_t
 	ubyte senderID;
 	ubyte targetID;
 	int orderFloor;
-	direction_t orderDir;
+	direction_t orderDirection;
 	state_t currentState;
 	int currentFloor;
 	int timestamp;
+	int[] syncInternalList;
 }
 
-enum direction_t{"DOWN" = 0, "UP" = 1, "INTERNAL" = 2};
+
+private shared ubyte myID = 0;
+
+ubyte getMyID()
+{
+	return myID;
+}
 
 /*
  * @brief   Thread responsible for passing messages between network module and remaining modules
@@ -52,6 +66,7 @@ enum direction_t{"DOWN" = 0, "UP" = 1, "INTERNAL" = 2};
  * @param toElevatorChn: channel directed to this elevator TODO: check if names correspond to use
  * @param elevatorID: the ID of this elevator
  */
+
 void messengerThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t toElevatorChn,
