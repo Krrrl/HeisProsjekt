@@ -1,90 +1,97 @@
 import std.stdio;
 
-import messenger,
+import main,
+       messenger,
+       operator,
        channels;
 
-enum direction_t{"DOWN" = 0, "UP" = 1, "INTERNAL" = 2};
+enum direction_t
+{
+	DOWN            = 0,
+	UP              = 1,
+	INTERNAL        = 2
+}
 
-class{
-	public:
-	string upQueue[main.nrOfFloors];
-	string downQueue[main.nrOfFloors];
-	string internalOrders[main.nrOfFloors];
+class ext_elevator_t{
+public:
+	string[main.nrOfFloors] upQueue;
+	string[main.nrOfFloors] downQueue;
+	string[main.nrOfFloors] internalOrders;
 	bool alive;
 	state_t currentState;
-	
-	
+
+
 	string[] getQueue(direction_t);
-}ext_elevator_t;
-
-
-findMatch(
-
-
-
-private string upQueue[main.nrOfFloors];
-private string downQueue[main.nrOfFloors];
-private string internalOrders[main.nrOfFloors];
-
-
-message_t confirmOrderToNetwork(string orderDeclaration, main.myID)
-{
-		
-	
-}
-	
-message_t expediteOrderToNetwork(string orderDeclaration, main.myID)
-{
-	
-	
-}
-	
-	
-string nextInQueue(direction_t)
-{
-	
-			
 }
 
 
+// findMatch (
 
 
 
-void keeperOfSetsThread(
-			shared NonBlockingChannel!message_t toNetworkChn,
-			shared NonBlockingChannel!message_t toElevatorChn,
-			shared NonBlockingChannel!message_t watchdogFeedChn)
+	private string[main.nrOfFloors] upQueue;
+	private string[main.nrOfFloors] downQueue;
+	private string[main.nrOfFloors] internalOrders;
+
+
+	message_t confirmOrderToNetwork(string orderDeclaration, main.myID)
 {
-    debug
-    {
-        writeln("    [x] keeperOfSetsThread");
-    }
+
+
+}
+
+	message_t expediteOrderToNetwork(string orderDeclaration, main.myID)
+{
+
+
+}
+
+
+	string nextInQueue(direction_t)
+{
+
+
+}
+
+
+
+
+
+	void keeperOfSetsThread(
+		shared NonBlockingChannel!message_t toNetworkChn,
+		shared NonBlockingChannel!message_t toElevatorChn,
+		shared NonBlockingChannel!message_t watchdogFeedChn)
+{
+	debug
+	{
+		writeln("    [x] keeperOfSetsThread");
+	}
 
 	//Generate your own sets
 
 
-	
+
 
 
 	//Generate sets for all other elevators
-	foreach(int elev; 0..main.nrOfElevators - 1)
+	foreach (int elev; 0..main.nrOfElevators - 1)
 	{
-		
-	}
-		
-	while(true)
-	{
-		if(toElevatorChn.exstract(receivedFromNetwork))
-		{
-			debug{writeln("Received from toElevChn: ", receivedFromNetwork)};
-			
-		}
-	
-	}
-	
-	
 
-	
+	}
+
+	while (true)
+	{
+		if (toElevatorChn.exstract(receivedFromNetwork))
+		{
+			debug { writeln("Received from toElevChn: ", receivedFromNetwork); }
+
+		}
+
+	}
+
+
+
+
 	message_t receivedFromNetwork;
 	string localOrderInstance;
 
@@ -92,13 +99,13 @@ void keeperOfSetsThread(
 	{
 		if (toElevatorChn.extract(receivedFromNetwork))
 		{
-            debug {
-                writeln("keeperOfSets: received ");
-                //printOrder(receivedFromNetwork);
-            }
+			debug {
+				writeln("keeperOfSets: received ");
+	                        //printOrder(receivedFromNetwork);
+			}
 /*
-			switch (receivedFromNetwork.type)
-			{
+                        switch (receivedFromNetwork.type)
+                        {
                 case order_header_t.delegateOrder:
                 {
                     //if .targetID == myID
@@ -128,14 +135,14 @@ void keeperOfSetsThread(
                 }
                 default:
                     //discard message
-			}
-            */
+                        }
+ */
 		}
-		//orders from IO
-		//Delegate, then post to toNetwork
+	        //orders from IO
+	        //Delegate, then post to toNetwork
 		if (locallyPlacedOrdersChn.extract(localOrderInstance))
 		{
-			//message_t = delegateOrder(localOrderInstance);
+	                //message_t = delegateOrder(localOrderInstance);
 
 		}
 	}
