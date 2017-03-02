@@ -10,6 +10,7 @@ class{
 	string internalOrders[main.nrOfFloors];
 	state_t currentState;
 	int currentFloor;
+	int lastTimestamp;
 	ubyte ID;
 	
 	string[] getQueue(direction_t);
@@ -20,7 +21,7 @@ ubyte findMatch(int orderFloor, direction_t orderDirection)
 {
 	if(orderDirection == "INTERNAL")
 		{
-			return main.myID;
+			return messenger.myID;
 		}
 
 }
@@ -31,18 +32,20 @@ ubyte findMatch(int orderFloor, direction_t orderDirection)
 private int upQueue[main.nrOfFloors];
 private int downQueue[main.nrOfFloors];
 private int internalQueue[main.nrOfFloors];
+public state_t currentState;
+public int currentFloor;
 
 private ext_elevator_t[ubyte] aliveElevators;
 private ext_elevator_t[ubyte] inactiveElevators;
 
 
-message_t confirmOrderToNetwork(string orderDeclaration, main.myID)
+message_t confirmOrderToNetwork(string orderDeclaration, messenger.myID)
 {
 		
 	
 }
 	
-message_t expediteOrderToNetwork(string orderDeclaration, main.myID)
+message_t expediteOrderToNetwork(string orderDeclaration, messenger.myID)
 {
 	
 	
@@ -121,7 +124,31 @@ void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
 	}
 }
 
+void updateHeartbeat(targetID, state_t currentState, int currentFloor, int timestamp)
+{
+	aliveElevators[targetID]->currentState = currentState;
+	aliveElevators[targetID]->currentFloor = currentFloor;
+	aliveElevators[targetID]->lastTimestamp = timestamp;
+}
 
+void sendSyncInfo(targetID)
+{
+
+}
+
+ubyte highestID()
+{
+	ubyte highestID = messenger.myID;
+	foreach(elevator; aliveElevators)
+	{
+		if(messenger.myID < elevator.ID)
+		{
+			highestID = elevator.ID;
+		}
+
+	}
+	return highestID;
+}
 
 void keeperOfSetsThread(
 			shared NonBlockingChannel!message_t toNetworkChn,
@@ -151,40 +178,49 @@ void keeperOfSetsThread(
 			{
 				case delegateOrder
 				{
-					if(receivedFromNetwork.targetID == main.myID)
+					if(receivedFromNetwork.targetID == messenger.myID)
 					{
-						addToList(main.myID, receivedFromNetwork.orderDirection, receivedFromNetwork.orderFloor);
+						addToList(messenger.myID, receivedFromNetwork.orderDirection, receivedFromNetwork.orderFloor);
 					}
 					break;
 				}
 
 				case confirmOrder
 				{
-					aliveElevators[receivedFromNetwork.senderID]
+					addToList(receivedFromNetwork.senderID, orderDirection, orderFloor);
 					break;
 				}
 
 				case expediteOrder
 				{
-
+					removeFromList(receivedFromNetwork.senderID, orderDirection, orderFloor);
 					break;
 				}
 
 				case syncRequest
 				{
-					
+					if(messenger.myID == highestID())
+					{
+						//sendSyncInfo(receivedFromNetwork.senderID);
+					}
 					break;
 				}
 
 				case syncInfo
 				{
-						
+					if(messenger.myID == receivedFromNetwork.targetID)
+					{
+						//syncMySet();
+					}
 					break;
 				}
 
 				case heartbeat
 				{
-					
+					updateHeartbeat(receivedFromNetwork.senderID,
+									receivedFromNetwork.currentState,
+									receivedFromNetwork.currentFloor,
+									receivedFromNetwork.timestamp);
 					break;
 				}
 
@@ -212,7 +248,7 @@ void keeperOfSetsThread(
 			{
                 case order_header_t.delegateOrder:
                 {
-                    //if .targetID == myID
+                    //if .targetIDessenger.myID
                     //add to my own set
                     //post orderConfirmation to toNetworkChn
                 }
