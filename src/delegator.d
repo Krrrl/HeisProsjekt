@@ -1,8 +1,12 @@
-import std.stdio;
+import std.stdio,
+       std.datetime;
 
-import channels,
+import main,
+       channels,
        keeperOfSets,
-       messenger;
+       messenger,
+       iolib,
+       operator;
 
 /*
  * @brief Thread responsible for delegating orders that haven't been delegated yet
@@ -12,38 +16,30 @@ import channels,
  */
 void delegatorThread(
     ref shared NonBlockingChannel!message_t toElevatorChn,
+    ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
     ubyte elevatorID
     )
 {
-
-	// Construct prevState for all buttons
+	/* Construct prevState for all buttons */
 	bool[main.nrOfFloors][3] buttonPrevMatrix = false;
-	shared static message_t testOrder = {
-		type : message_header_t.delegateOrder,
-		senderID : "1",
-		targetID : "2",
-        orderFloor : 2,
-        orderDir : direction_t.DOWN,
-		currentState : state_t.GOING_UP,
-		currentFloor : 1,
-		timestamp : 0
-	};
 
 	while (true)
 	{
-        /* Check button states and produce orders */
+        /* Check button states and register new presses */
+        // TODO: Should this be in a seperate thread? We don't want to miss any button presses dues to processing new orders
 		foreach (floor; 0..main.nrOfFloors)
 		{
-            writeln(floor);
-			foreach (buttonType; elevButtonTypes())
+			foreach (buttonType; button_types_t())
 			{
-                bool buttonState = cast(bool)(elev_get_button_signal(buttonType, floor));
+                bool buttonState = cast(bool)(elev_get_button_signal(cast(elev_button_type_t)(buttonType), floor));
                 bool prevButtonState = buttonPrevMatrix[cast(int)(buttonType)][floor];
-                debug writeln(buttonState);
 
 				if (buttonState && !prevButtonState)
                 {
-					debug writeln("buttontype:", buttonType, "pressed on floor ", floor);
+                    message_t newOrder;
+                    newOrder.orderFloor = floor;
+                    newOrder.orderDirection = buttonType;
+                    ordersToBeDelegatedChn.insert(newOrder);
 
                     buttonPrevMatrix[cast(int)(buttonType)][floor] = true;
                 }
@@ -52,16 +48,20 @@ void delegatorThread(
                     buttonPrevMatrix[cast(int)(buttonType)][floor] = false;
                 }
 			}
-
         }
 
-		if (locallyPlacedOrdersChn.extract(localOrderInstance))
-		{
-             //int bestElevator = findClosestElevator(localOrderInstance); // keeper of sets has information, how to get it?
-            // message_t = 
+        /* Delegate new orders */
+        message_t newOrder;
+        if (ordersToBeDelegatedChn.extract(newOrder))
+        {
+            newOrder.senderID = messenger.getMyID();
+            newOrder.targetID = findMatch(newOrder.orderFloor, newOrder.orderDirection);
+            newOrder.currentState = getCurrentState();
+            newOrder.timestamp = Clock.currTime().stdTime;
+            writeln(newOrder);
+        }
 
-		}
+
 	}
 }
-
 

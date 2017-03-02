@@ -25,6 +25,13 @@ enum state_t
 	FLOORSTOP
 }
 
+private shared state_t _currentState;
+
+state_t getCurrentState()
+{
+    return _currentState;
+}
+
 /*
  * @brief   Thread responsible for operating the lift and carrying out orders delegated to this elevator
  * @details Implemented with a state machine
@@ -45,8 +52,6 @@ void operatorThread(
 	while (true)
 	{
 		// Check panels
-		}
-
 
 		// Check lift sensors
 	}

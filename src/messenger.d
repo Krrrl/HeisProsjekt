@@ -2,6 +2,7 @@ import std.stdio,
        std.concurrency,
        std.conv,
        std.variant,
+       std.datetime,
        core.thread,
        core.time;
 
@@ -12,6 +13,37 @@ import main,
        channels,
        keeperOfSets,
        operator;
+
+
+enum button_type_t
+{
+	UP              = 0,
+	DOWN            = 1,
+	INTERNAL        = 2
+}
+
+// An elevButtonTypes struct is made in addition to elev_button_type_t to use as foreach aggregate
+struct button_types_t
+{
+	button_type_t[3] buttons = [
+		button_type_t.UP,
+		button_type_t.DOWN,
+		button_type_t.INTERNAL
+	];
+
+	int opApply(scope int delegate(ref button_type_t) dg)
+	{
+		int result = 0;
+
+		for (int i = 0; i < buttons.length; i++)
+		{
+			result = dg(buttons[i]);
+			if (result)
+				break;
+		}
+		return result;
+	}
+}
 
 /*
  * @brief   Header used for switching content of message_t messages
@@ -26,36 +58,28 @@ enum message_header_t
 	heartbeat
 }
 
-enum direction_t
-{
-	DOWN            = 0,
-	UP              = 1,
-	INTERNAL        = 2
-}
-
 /*
  * @brief   Message struct passed internally between threads and externally between elevators
- * @TODO    Jeg mener vi burde kalle meldings structen noe som "message_t", siden den ikke bare inneholder orders, men også heartbeats, syncInfo etc... f.ex: message_t; packet_t;
  */
 struct message_t
 {
-	message_header_t type;
+	message_header_t header;
 	ubyte senderID;
 	ubyte targetID;
 	int orderFloor;
-	direction_t orderDirection;
+	button_type_t orderDirection;
 	state_t currentState;
 	int currentFloor;
-	int timestamp;
-	int[] syncInternalList;
+    long timestamp;
+	shared bool[int] syncInternalList;
 }
 
 
-private shared ubyte myID = 0;
+private shared ubyte _myID = 0;
 
 ubyte getMyID()
 {
-	return myID;
+	return _myID;
 }
 
 /*
@@ -74,8 +98,9 @@ void messengerThread(
 	)
 {
 	debug writeln("    [x] messengerThread");
-	Tid networkTid;
-	networkTid = udp_bcast.init!(message_t)(id, thisTid());
+	Tid peerTx = peers.init;
+    _myID = peers.id;
+	Tid networkTid = udp_bcast.init!(message_t)(getMyID, thisTid());
 
 	message_t receivedToNetworkOrder;
 	message_t receivedToElevatorOrder;
@@ -86,16 +111,12 @@ void messengerThread(
 		{
 			debug writeln("messenger: passing  to network");
 
-			if ( (receivedToNetworkOrder.message_header_t == message_header_t.delegateOrder)
-			    && (receivedToNetworkOrder.orderDir == direction_t.INTERNAL)
-                )
-            {
-				toElevatorChn.insert(recivedToNetworkOrder);
-            }
+			if ( (receivedToNetworkOrder.header == message_header_t.delegateOrder)
+			     && (receivedToNetworkOrder.orderDirection == button_type_t.INTERNAL)
+			     )
+				toElevatorChn.insert(receivedToNetworkOrder);
 			else
-            {
 				networkTid.send(receivedToNetworkOrder);
-            }
 		}
 
 		// Only the network thread uses receive

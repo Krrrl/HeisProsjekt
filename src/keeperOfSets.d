@@ -1,4 +1,5 @@
-import std.stdio;
+import std.stdio,
+       std.datetime;
 
 import main,
        messenger,
@@ -7,20 +8,20 @@ import main,
 
 class ext_elevator_t{
 	public:
-	int[int] upQueue;
-	int[int] downQueue;
-	int[int] internalOrders;
+	bool[int] upQueue;
+	bool[int] downQueue;
+	bool[int] internalQueue;
 	state_t currentState;
 	int currentFloor;
-	int lastTimestamp;
+	long lastTimestamp;
 	ubyte ID;
 }
 	
 
 
-ubyte findMatch(int orderFloor, direction_t orderDirection)
+ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
-	if(orderDirection == direction_t.INTERNAL)
+	if(orderDirection == button_type_t.INTERNAL)
 		{
 			return getMyID();
 		}
@@ -31,44 +32,48 @@ private ext_elevator_t[ubyte] aliveElevators;
 private ext_elevator_t[ubyte] inactiveElevators;
 
 
-void addToList(ubyte targetID, direction_t orderDirection, int orderFloor)
+void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 {
 	switch(orderDirection)
 	{
-		case direction_t.DOWN:
-		{
-			if(orderFloor !in aliveElevators[targetID].downQueue)
-			{
-				aliveElevators[targetID].downQueue ~= orderFloor;
-			}
-			break;
-		}
-
-		case direction_t.UP:
+		case button_type_t.DOWN:
 		{
 			if(orderFloor !in aliveElevators[targetID].upQueue)
 			{
-				aliveElevators[targetID].upQueue ~= orderFloor;
-			}
+                aliveElevators[targetID].downQueue[orderFloor] = true;
+			}	
 			break;
 		}
 
-		case direction_t.INTERNAL:
+		case button_type_t.UP:
+		{
+			if(orderFloor !in aliveElevators[targetID].downQueue)
+			{
+                aliveElevators[targetID].upQueue[orderFloor] = true;
+			}	
+			break;
+		}
+
+		case button_type_t.INTERNAL:
 		{
 			if(orderFloor !in aliveElevators[targetID].internalQueue)
 			{
-				aliveElevators[targetID].internalQueue ~= orderFloor;
-			}
+                aliveElevators[targetID].internalQueue[orderFloor] = true;
+			}	
 			break;
 		}
+        default:
+        {
+            break;
+        }
 	}
 }
 
-void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
+void removeFromList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 {
 	switch(orderDirection)
 	{
-		case direction_t.DOWN:
+		case button_type_t.DOWN:
 		{
 			if(orderFloor in aliveElevators[targetID].downQueue)
 			{	
@@ -77,7 +82,7 @@ void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
 			break;
 		}
 
-		case direction_t.UP:
+		case button_type_t.UP:
 		{
 			if(orderFloor in aliveElevators[targetID].upQueue)
 			{
@@ -86,7 +91,7 @@ void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
 			break;
 		}
 
-		case direction_t.INTERNAL:
+		case button_type_t.INTERNAL:
 		{
 			if(orderFloor in aliveElevators[targetID].internalQueue)
 			{
@@ -94,10 +99,14 @@ void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
 			}
 			break;
 		}
+        default:
+        {
+            break;
+        }
 	}
 }
 
-void updateHeartbeat(ubyte targetID, state_t currentState, int currentFloor, int timestamp)
+void updateHeartbeat(ubyte targetID, state_t currentState, int currentFloor, long timestamp)
 {
 	aliveElevators[targetID].currentState = currentState;
 	aliveElevators[targetID].currentFloor = currentFloor;
@@ -109,7 +118,7 @@ void sendSyncInfo(ubyte targetID)
 
 }
 
-void syncMySet(int[] internalSet)
+void syncMySet(shared bool[int] internalSet)
 {
 
 }
@@ -148,7 +157,7 @@ void keeperOfSetsThread(
 		if(toElevatorChn.extract(receivedFromNetwork))
 		{
 			debug{writeln("Received from toElevChn: ", receivedFromNetwork);}
-			switch(receivedFromNetwork.message_header_t)
+			switch(receivedFromNetwork.header)
 			{
 				case message_header_t.delegateOrder:
 				{
@@ -205,6 +214,10 @@ void keeperOfSetsThread(
 									receivedFromNetwork.timestamp);
 					break;
 				}
+                default:
+                {
+                    break;
+                }
 			}
 		}	
 	}

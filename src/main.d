@@ -13,9 +13,11 @@ import channels,
        messenger,
        watchdog,
        operator,
+       delegator,
        iolib;
 
 const nrOfFloors        = 4;
+const nrOfButtons       = 3;
 const nrOfPeers         = 3;
 
 void main(string[] args)
@@ -37,6 +39,8 @@ void main(string[] args)
 	shared NonBlockingChannel!message_t toNetworkChn = new NonBlockingChannel!message_t;
 	// channel mellom watchdog og Keeper
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
+    // channel for putting orders that need to be delegated
+    shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
 
 	debug writeln("Initializing lift hardware ...");
 	elev_type ioInterface = elev_type.ET_Comedi;
@@ -77,6 +81,7 @@ void main(string[] args)
 		watchdogFeedChn,
 		toNetworkChn,
 		toElevatorChn,
+        ordersToBeDelegatedChn,
 		id);
 
     operatorTid = spawn(
@@ -87,9 +92,9 @@ void main(string[] args)
     delegatorTid = spawn(
             &delegatorThread,
             toElevatorChn,
+            ordersToBeDelegatedChn,
             id);
 
-	Tid peerTx = peers.init;
 
 	//netwerks config og init, fra network-D main.d:
 	//		Tid peerTx = peers.init;                    -- lage liste over peers
@@ -104,6 +109,9 @@ void main(string[] args)
 	{
 
 		// Check that the threads are still running, and if not restart either the thread or the whole program?
+        
+
+
 	}
 
 

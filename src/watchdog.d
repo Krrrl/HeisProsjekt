@@ -25,6 +25,7 @@ void watchdogThread(
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t toElevatorChn,
+    ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
 	ubyte elevatorID
 	)
 {
