@@ -41,6 +41,8 @@ struct order_t
 	int timestamp;
 }
 
+enum direction_t{"DOWN" = 0, "UP" = 1, "INTERNAL" = 2};
+
 /*
  * @brief   Thread responsible for passing messages between network module and remaining modules
  * @details xxx

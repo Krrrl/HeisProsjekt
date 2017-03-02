@@ -3,28 +3,37 @@ import std.stdio;
 import messenger,
        channels;
 
-enum direction_t{"DOWN" = 0, "UP" = 1, "INTERNAL" = 2};
-
 class{
 	public:
 	string upQueue[main.nrOfFloors];
 	string downQueue[main.nrOfFloors];
 	string internalOrders[main.nrOfFloors];
-	bool alive;
 	state_t currentState;
-	
+	int currentFloor;
+	ubyte ID;
 	
 	string[] getQueue(direction_t);
 }ext_elevator_t;
 
 
-findMatch(
+ubyte findMatch(int orderFloor, direction_t orderDirection)
+{
+	if(orderDirection == "INTERNAL")
+		{
+			return main.myID;
+		}
+
+}
 
 
 
-private string upQueue[main.nrOfFloors];
-private string downQueue[main.nrOfFloors];
-private string internalOrders[main.nrOfFloors];
+
+private int upQueue[main.nrOfFloors];
+private int downQueue[main.nrOfFloors];
+private int internalQueue[main.nrOfFloors];
+
+private ext_elevator_t[ubyte] aliveElevators;
+private ext_elevator_t[ubyte] inactiveElevators;
 
 
 order_t confirmOrderToNetwork(string orderDeclaration, main.myID)
@@ -46,7 +55,71 @@ string nextInQueue(direction_t)
 			
 }
 
+void addToList(ubyte targetID, direction_t orderDirection, int orderFloor)
+{
+	switch(orderDirection)
+	{
+		case "DOWN"
+		{
+			if(orderFloor (not in) aliveElevators[targetID].downQueue)
+			{
+				aliveElevators[targetID].downQueue.append(orderFloor);
+			}
+			break;
+		}
 
+		case "UP"
+		{
+			if(orderFloor (not in) aliveElevators[targetID].upQueue)
+			{
+				aliveElevators[targetID].upQueue.append(orderFloor);
+			}
+			break;
+		}
+
+		case "INTERNAL"
+		{
+			if(orderFloor (not in) aliveElevators[targetID].internalQueue)
+			{
+				aliveElevators[targetID].internalQueue.append(orderFloor);
+			}
+			break;
+		}
+	}
+}
+
+void removeFromList(ubyte targetID, direction_t orderDirection, int orderFloor)
+{
+	switch(orderDirection)
+	{
+		case "DOWN"
+		{
+			if(orderFloor in aliveElevators[targetID].downQueue)
+			{	
+				aliveElevators[targetID].downQueue.append(orderFloor);
+			}
+			break;
+		}
+
+		case "UP"
+		{
+			if(orderFloor in aliveElevators[targetID].upQueue)
+			{
+				aliveElevators[targetID].upQueue.append(orderFloor);
+			}	
+			break;
+		}
+
+		case "INTERNAL"
+		{
+			if(orderFloor in aliveElevators[targetID].internalQueue)
+			{
+				aliveElevators[targetID].internalQueue.append(orderFloor);
+			}
+			break;
+		}
+	}
+}
 
 
 
@@ -63,9 +136,6 @@ void keeperOfSetsThread(
 	//Generate your own sets
 
 
-	
-
-
 	//Generate sets for all other elevators
 	foreach(int elev; 0..main.nrOfElevators - 1)
 	{
@@ -74,10 +144,51 @@ void keeperOfSetsThread(
 		
 	while(true)
 	{
-		if(toElevatorChn.exstract(receivedFromNetwork))
+		if(toElevatorChn.extract(receivedFromNetwork))
 		{
 			debug{writeln("Received from toElevChn: ", receivedFromNetwork)};
-			
+			switch(receivedFromNetwork.message_header_t)
+			{
+				case delegateOrder
+				{
+					if(receivedFromNetwork.targetID == main.myID)
+					{
+						addToList(main.myID, receivedFromNetwork.orderDirection, receivedFromNetwork.orderFloor);
+					}
+					break;
+				}
+
+				case confirmOrder
+				{
+					aliveElevators[receivedFromNetwork.senderID]
+					break;
+				}
+
+				case expediteOrder
+				{
+
+					break;
+				}
+
+				case syncRequest
+				{
+					
+					break;
+				}
+
+				case syncInfo
+				{
+						
+					break;
+				}
+
+				case heartbeat
+				{
+					
+					break;
+				}
+
+			}	
 		}
 	
 	}
