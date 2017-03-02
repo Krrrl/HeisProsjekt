@@ -33,17 +33,18 @@ enum state_t
  * param toNetworkChn: channel directed to external network
  */
 void operatorThread(
-	ref shared NonBlockingChannel!order_t toElevatorChn,
-	ref shared NonBlockingChannel!order_t toNetworkChn
+	ref shared NonBlockingChannel!message_t toElevatorChn,
+	ref shared NonBlockingChannel!message_t toNetworkChn
 	)
 {
 	debug writeln("    [x] operatorThread");
 
-	shared static order_t testOrder = {
-		type : order_header_t.delegateOrder,
+	shared static message_t testOrder = {
+		type : message_header_t.delegateOrder,
 		senderID : "1",
 		targetID : "2",
-		orderDeclaration : "goUp",
+        orderFloor : 2,
+        orderDir : direction_t.DOWN,
 		currentState : state_t.GOING_UP,
 		currentFloor : 1,
 		timestamp : 0

@@ -22,9 +22,9 @@ import channels,
  * @param elevatorID: the ID of this elevator
  */
 void watchdogThread(
-	ref shared NonBlockingChannel!order_t watchdogFeedChn,
-	ref shared NonBlockingChannel!order_t toNetworkChn,
-	ref shared NonBlockingChannel!order_t toElevatorChn,
+	ref shared NonBlockingChannel!message_t watchdogFeedChn,
+	ref shared NonBlockingChannel!message_t toNetworkChn,
+	ref shared NonBlockingChannel!message_t toElevatorChn,
     ref shared NonBlockingChannel!string locallyPlacedOrdersChn,
 	ubyte elevatorID
 	)
