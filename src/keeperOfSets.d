@@ -3,17 +3,88 @@ import std.stdio;
 import messenger,
        channels;
 
+enum direction_t{"DOWN" = 0, "UP" = 1, "INTERNAL" = 2};
 
-void keeperOfSetsThread(shared NonBlockingChannel!order_t toNetworkChn,
+class{
+	public:
+	string upQueue[main.nrOfFloors];
+	string downQueue[main.nrOfFloors];
+	string internalOrders[main.nrOfFloors];
+	bool alive;
+	state_t currentState;
+	
+	
+	string[] getQueue(direction_t);
+}ext_elevator_t;
+
+
+findMatch(
+
+
+
+private string upQueue[main.nrOfFloors];
+private string downQueue[main.nrOfFloors];
+private string internalOrders[main.nrOfFloors];
+
+
+order_t confirmOrderToNetwork(string orderDeclaration, main.myID)
+{
+		
+	
+}
+	
+order_t expediteOrderToNetwork(string orderDeclaration, main.myID)
+{
+	
+	
+}
+	
+	
+string nextInQueue(direction_t)
+{
+	
+			
+}
+
+
+
+
+
+void keeperOfSetsThread(
+			shared NonBlockingChannel!order_t toNetworkChn,
 			shared NonBlockingChannel!order_t toElevatorChn,
-			shared NonBlockingChannel!order_t watchdogFeedChn,
-			shared NonBlockingChannel!string locallyPlacedOrdersChn)
+			shared NonBlockingChannel!order_t watchdogFeedChn)
 {
     debug
     {
         writeln("    [x] keeperOfSetsThread");
     }
 
+	//Generate your own sets
+
+
+	
+
+
+	//Generate sets for all other elevators
+	foreach(int elev; 0..main.nrOfElevators - 1)
+	{
+		
+	}
+		
+	while(true)
+	{
+		if(toElevatorChn.exstract(receivedFromNetwork))
+		{
+			debug{writeln("Received from toElevChn: ", receivedFromNetwork)};
+			
+		}
+	
+	}
+	
+	
+
+	
 	order_t receivedFromNetwork;
 	string localOrderInstance;
 

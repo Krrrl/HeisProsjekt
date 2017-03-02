@@ -42,60 +42,6 @@ struct order_t
 }
 
 /*
- * @brief   Prints the contents of an order_t message
- * @details Mostly used for debugging
- *
- * @param order_t:  the message which contents will be printed
- */
-void print_order_content(order_t order)
-{
-	writeln("order:");
-	write("    type: ");
-	switch (order.type)
-	{
-	case order_header_t.delegateOrder:
-	{
-		writeln("delegateOrder");
-		break;
-	}
-	case order_header_t.confirmOrder:
-	{
-		writeln("confirmOrder");
-		break;
-	}
-	case order_header_t.expediteOrder:
-	{
-		writeln("expediteOrder");
-		break;
-	}
-	case order_header_t.syncRequest:
-	{
-		writeln("syncRequest");
-		break;
-	}
-	case order_header_t.syncInfo:
-	{
-		writeln("syncInfo");
-		break;
-	}
-	case order_header_t.heartbeat:
-	{
-		writeln("heartbeat");
-		break;
-	}
-	default:
-		writeln("unknownOrderType");
-		break;
-	}
-	writeln("    senderID:", order.senderID);
-	writeln("    targetID:", order.targetID);
-	writeln("    orderDeclaration:", order.orderDeclaration);
-	writeln("    currentState:", order.currentState);
-	writeln("    currentFloor:", order.currentFloor);
-	writeln("    timestamp:", order.timestamp);
-}
-
-/*
  * @brief   Thread responsible for passing messages between network module and remaining modules
  * @details xxx
  *
@@ -121,7 +67,16 @@ void messengerThread(
 		if (toNetworkChn.extract(receivedToNetworkOrder))
         {
 			debug writeln("messenger: passing order to network");
-            networkTid.send(receivedToNetworkOrder);
+			
+			if((recivedToNetworkOrder.order_header_t == order_header_t.delegateOrder) 
+				&& ("i" in recivedToNetworkOrder.orderDeclaration))
+			{
+				toElevatorChn.insert(recivedToNetworkOrder);
+			}
+			else
+			{
+            	networkTid.send(receivedToNetworkOrder);
+        	}
         }
 
 		// Only the network thread uses receive
@@ -139,7 +94,6 @@ void messengerThread(
 			);
 
 		debug Thread.sleep(msecs(10));
-		//TODO: connection-lost scenario/handling?
 	}
 }
 
