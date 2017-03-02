@@ -26,7 +26,6 @@ void watchdogThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t toElevatorChn,
     ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
-	ubyte elevatorID
 	)
 {
 	debug writeln("    [x] watchdogThread");
@@ -38,7 +37,7 @@ void watchdogThread(
 
 	while (true)
 	{
-		debug writeln("watchdog: [self] heartbeat ", heartBeats++);
+		//debug writeln("watchdog: [self] heartbeat ", heartBeats++);
 
 		Thread.getThis().sleep(seconds(4));
 	}

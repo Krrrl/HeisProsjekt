@@ -16,8 +16,8 @@ import main,
  */
 void delegatorThread(
     ref shared NonBlockingChannel!message_t toElevatorChn,
+    ref shared NonBlockingChannel!message_t toNetworkChn,
     ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
-    ubyte elevatorID
     )
 {
 	/* Construct prevState for all buttons */
@@ -55,10 +55,16 @@ void delegatorThread(
         if (ordersToBeDelegatedChn.extract(newOrder))
         {
             newOrder.senderID = messenger.getMyID();
-            newOrder.targetID = findMatch(newOrder.orderFloor, newOrder.orderDirection);
             newOrder.currentState = getCurrentState();
+            newOrder.currentFloor = getCurrentFloor();
             newOrder.timestamp = Clock.currTime().stdTime;
-            writeln(newOrder);
+
+            newOrder.targetID = findMatch(newOrder.orderFloor, newOrder.orderDirection);
+
+            //debug writeln(newOrder);
+
+            toNetworkChn.insert(newOrder);
+
         }
 
 

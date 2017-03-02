@@ -22,7 +22,6 @@ enum button_type_t
 	INTERNAL        = 2
 }
 
-// An elevButtonTypes struct is made in addition to elev_button_type_t to use as foreach aggregate
 struct button_types_t
 {
 	button_type_t[3] buttons = [
@@ -70,7 +69,7 @@ struct message_t
 	button_type_t orderDirection;
 	state_t currentState;
 	int currentFloor;
-    long timestamp;
+	long timestamp;
 	shared bool[int] syncInternalList;
 }
 
@@ -94,12 +93,11 @@ ubyte getMyID()
 void messengerThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t toElevatorChn,
-	ubyte elevatorID
 	)
 {
 	debug writeln("    [x] messengerThread");
 	Tid peerTx = peers.init;
-    _myID = peers.id;
+	_myID = peers.id;
 	Tid networkTid = udp_bcast.init!(message_t)(getMyID, thisTid());
 
 	message_t receivedToNetworkOrder;
@@ -109,7 +107,7 @@ void messengerThread(
 	{
 		if (toNetworkChn.extract(receivedToNetworkOrder))
 		{
-			debug writeln("messenger: passing  to network");
+			debug writeln("messenger: passing to network");
 
 			if ( (receivedToNetworkOrder.header == message_header_t.delegateOrder)
 			     && (receivedToNetworkOrder.orderDirection == button_type_t.INTERNAL)
@@ -119,20 +117,25 @@ void messengerThread(
 				networkTid.send(receivedToNetworkOrder);
 		}
 
-		// Only the network thread uses receive
+		/* Only the network thread uses receive */
 		receiveTimeout(
 			msecs(1),
 			(message_t orderFromNetwork)
 		{
 			writeln("messenger: received order from network");
-			writeln(orderFromNetwork);
+			writeln(" >> ", orderFromNetwork);
+		},
+			(PeerList list)
+		{
+			writeln("messenger: received PeerList from network");
+			writeln(" >> ", list);
 		},
 			(Variant v)
 		{
 			writeln("messenger: received Variant from network");
+			writeln(">>> ", v);
 		}
 			);
-
 		debug Thread.sleep(msecs(10));
 	}
 }

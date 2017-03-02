@@ -22,17 +22,6 @@ const nrOfPeers         = 3;
 
 void main(string[] args)
 {
-    // Parse in an id if parameters are given
-	ubyte id;
-	if (args.length > 1)
-    {
-		id = parse!ubyte (args[1]);
-    }
-    else
-    {
-        id = 0;
-    }
-
 	// channel fra messenger til keeper
 	shared NonBlockingChannel!message_t toElevatorChn = new NonBlockingChannel!message_t;
 	// channel fra Keeper til network
@@ -41,11 +30,12 @@ void main(string[] args)
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
     // channel for putting orders that need to be delegated
     shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
+    // channel for 
 
 	debug writeln("Initializing lift hardware ...");
 	elev_type ioInterface = elev_type.ET_Comedi;
-	if (args.length > 2)
-		if (args[2] == "sim")
+	if (args.length > 1)
+		if (args[1] == "sim")
 			ioInterface = elev_type.ET_Simulation;
 
 	elev_init(ioInterface);
@@ -73,16 +63,14 @@ void main(string[] args)
 	messengerTid = spawn(
 		&messengerThread,
 		toNetworkChn,
-		toElevatorChn,
-		id);
+		toElevatorChn);
 
 	watchdogTid = spawn(
 		&watchdogThread,
 		watchdogFeedChn,
 		toNetworkChn,
 		toElevatorChn,
-        ordersToBeDelegatedChn,
-		id);
+        ordersToBeDelegatedChn);
 
     operatorTid = spawn(
         &operatorThread,
@@ -92,28 +80,11 @@ void main(string[] args)
     delegatorTid = spawn(
             &delegatorThread,
             toElevatorChn,
-            ordersToBeDelegatedChn,
-            id);
-
-
-	//netwerks config og init, fra network-D main.d:
-	//		Tid peerTx = peers.init;                    -- lage liste over peers
-	//		ubyte id = peers.id;						-- returnere ID'en til peers
-	//		Tid networkTid = udp_bcast.init!(HelloMsg, ArrayMsg)(id);
-
-
-	//spawn watchdog
-	//spawn io-dude
+            toNetworkChn,
+            ordersToBeDelegatedChn);
 
 	while (true)
 	{
-
 		// Check that the threads are still running, and if not restart either the thread or the whole program?
-        
-
-
 	}
-
-
-
 }

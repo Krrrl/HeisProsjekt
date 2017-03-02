@@ -26,10 +26,16 @@ enum state_t
 }
 
 private shared state_t _currentState;
+private shared int _currentFloor;
 
 state_t getCurrentState()
 {
-    return _currentState;
+	return _currentState;
+}
+
+int getCurrentFloor()
+{
+	return _currentFloor;
 }
 
 /*
@@ -46,12 +52,8 @@ void operatorThread(
 {
 	debug writeln("    [x] operatorThread");
 
-
-
-
 	while (true)
 	{
-		// Check panels
 
 		// Check lift sensors
 	}
