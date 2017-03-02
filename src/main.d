@@ -2,6 +2,7 @@ import core.time,
        core.thread,
        std.stdio,
        std.string,
+       std.container.array,
        std.conv,
        std.concurrency;
 
@@ -28,9 +29,10 @@ void main(string[] args)
 	shared NonBlockingChannel!message_t toNetworkChn = new NonBlockingChannel!message_t;
 	// channel mellom watchdog og Keeper
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
-    // channel for putting orders that need to be delegated
-    shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
-    // channel for 
+	// channel for putting orders that need to be delegated
+	shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
+
+	// channel for
 
 	debug writeln("Initializing lift hardware ...");
 	elev_type ioInterface = elev_type.ET_Comedi;
@@ -51,40 +53,54 @@ void main(string[] args)
 	Tid messengerTid;
 	Tid keeperOfSetsTid;
 	Tid watchdogTid;
-    Tid operatorTid;
-    Tid delegatorTid;
+	Tid operatorTid;
+	Tid delegatorTid;
 
-	keeperOfSetsTid = spawn(
-		&keeperOfSetsThread,
-		toNetworkChn,
-		toElevatorChn,
-		watchdogFeedChn);
 
-	messengerTid = spawn(
-		&messengerThread,
-		toNetworkChn,
-		toElevatorChn);
+    keeperOfSetsTid = spawnLinked(
+        &keeperOfSetsThread,
+        toNetworkChn,
+        toElevatorChn,
+        watchdogFeedChn);
 
-	watchdogTid = spawn(
-		&watchdogThread,
-		watchdogFeedChn,
-		toNetworkChn,
-		toElevatorChn,
+    messengerTid = spawnLinked(
+        &messengerThread,
+        toNetworkChn,
+        toElevatorChn);
+
+    watchdogTid = spawnLinked(
+        &watchdogThread,
+        watchdogFeedChn,
+        toNetworkChn,
+        toElevatorChn,
         ordersToBeDelegatedChn);
 
-    operatorTid = spawn(
+    operatorTid = spawnLinked(
         &operatorThread,
         toElevatorChn,
         toNetworkChn);
 
-    delegatorTid = spawn(
-            &delegatorThread,
-            toElevatorChn,
-            toNetworkChn,
-            ordersToBeDelegatedChn);
-
+    delegatorTid = spawnLinked(
+        &delegatorThread,
+        toElevatorChn,
+        toNetworkChn,
+        ordersToBeDelegatedChn);
+        
 	while (true)
 	{
-		// Check that the threads are still running, and if not restart either the thread or the whole program?
+		receive(
+			(LinkTerminated e)
+		{
+			writeln("\x1B[31m *** main: A THREAD HAS TERMINATED ***");
+            writeln(e);
+            // TODO: kill/restart application
+            Array!Tid listOfTids;
+            listOfTids.insert(messengerTid);
+            listOfTids.insert(keeperOfSetsTid);
+            listOfTids.insert(watchdogTid);
+            listOfTids.insert(operatorTid);
+            listOfTids.insert(delegatorTid);
+		}
+			);
 	}
 }

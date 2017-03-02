@@ -6,7 +6,7 @@ import main,
        operator,
        channels;
 
-class ext_elevator_t{
+struct ext_elevator_t{
 	public:
 	bool[int] upQueue;
 	bool[int] downQueue;
@@ -16,8 +16,9 @@ class ext_elevator_t{
 	long lastTimestamp;
 	ubyte ID;
 }
-	
 
+private ext_elevator_t[ubyte] aliveElevators;
+private ext_elevator_t[ubyte] inactiveElevators;
 
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
@@ -25,20 +26,18 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		{
 			return getMyID();
 		}
+    // TODO: Implement this niiice algorithm
 	return 0;
 }
 
-private ext_elevator_t[ubyte] aliveElevators;
-private ext_elevator_t[ubyte] inactiveElevators;
-
-
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 {
+    // TODO: check that targetID is in aliveElevators?
 	switch(orderDirection)
 	{
 		case button_type_t.DOWN:
 		{
-			if(orderFloor !in aliveElevators[targetID].upQueue)
+			if(orderFloor !in aliveElevators[targetID].upQueue) 
 			{
                 aliveElevators[targetID].downQueue[orderFloor] = true;
 			}	
@@ -56,7 +55,7 @@ void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 
 		case button_type_t.INTERNAL:
 		{
-			if(orderFloor !in aliveElevators[targetID].internalQueue)
+			if(orderFloor !in aliveElevators[targetID].internalQueue) // TODO: GDB viser at denne tråden kræsjer når den kjører denne linjen
 			{
                 aliveElevators[targetID].internalQueue[orderFloor] = true;
 			}	
@@ -67,6 +66,7 @@ void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
             break;
         }
 	}
+    debug writeln(aliveElevators[targetID]);
 }
 
 void removeFromList(ubyte targetID, button_type_t orderDirection, int orderFloor)
@@ -150,13 +150,16 @@ void keeperOfSetsThread(
 	ext_elevator_t localElevator;
 	aliveElevators[getMyID()] = localElevator;
 
+    writeln(aliveElevators[getMyID()]);
 	message_t receivedFromNetwork;
 
 	while (true)
 	{
 		if(toElevatorChn.extract(receivedFromNetwork))
 		{
-			debug{writeln("Received from toElevChn: ", receivedFromNetwork);}
+			debug writeln("keeperOfSets: from toElevChn: ");
+            debug writeln(receivedFromNetwork);
+
 			switch(receivedFromNetwork.header)
 			{
 				case message_header_t.delegateOrder:
@@ -166,6 +169,8 @@ void keeperOfSetsThread(
 						addToList(getMyID(), 
 								receivedFromNetwork.orderDirection, 
 								receivedFromNetwork.orderFloor);
+                        // send confirm to network
+                        // set lights on
 					}
 					break;
 				}
@@ -176,6 +181,7 @@ void keeperOfSetsThread(
 							receivedFromNetwork.senderID,
 							receivedFromNetwork.orderDirection, 
 							receivedFromNetwork.orderFloor);
+                    // set lights on
 					break;
 				}
 
@@ -185,6 +191,7 @@ void keeperOfSetsThread(
 								receivedFromNetwork.senderID, 
 								receivedFromNetwork.orderDirection, 
 								receivedFromNetwork.orderFloor);
+                    // set lights off
 					break;
 				}
 
@@ -201,6 +208,7 @@ void keeperOfSetsThread(
 				{
 					if(getMyID() == receivedFromNetwork.targetID)
 					{
+                        //TODO: Skulle ikke mottagning av syncinfo være i init i main før threads blir startet?
 						syncMySet(receivedFromNetwork.syncInternalList);
 					}
 					break;

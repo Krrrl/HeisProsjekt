@@ -107,14 +107,19 @@ void messengerThread(
 	{
 		if (toNetworkChn.extract(receivedToNetworkOrder))
 		{
-			debug writeln("messenger: passing to network");
 
 			if ( (receivedToNetworkOrder.header == message_header_t.delegateOrder)
 			     && (receivedToNetworkOrder.orderDirection == button_type_t.INTERNAL)
 			     )
+            {
+                debug writeln("messenger: passing delegate to keeper");
 				toElevatorChn.insert(receivedToNetworkOrder);
+            }
 			else
+            {
+                debug writeln("messenger: passing delegate to network");
 				networkTid.send(receivedToNetworkOrder);
+            }
 		}
 
 		/* Only the network thread uses receive */
