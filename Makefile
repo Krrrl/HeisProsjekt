@@ -1,3 +1,4 @@
+
 # Which C compiler to use
 CC = gcc
 # C compiler flags
@@ -34,6 +35,9 @@ CLIB_FILES = $(CLIB_SRC:.c=)
 
 TARGET = best_elevator
 SIM_TARGET = sim_server
+SIM_PORT = 15657
+PORT = 0
+SIM_CON_FILE = simulator.con
 
 # Make rules begin here
 
@@ -47,7 +51,7 @@ SIM_TARGET = sim_server
 #	when dependencies are variables/'lists of files', make scans the files and checks if they have been changed. it will only run the rule corresponing to the dependency if they have changed.
 #	running: $ make , without any argument either starts the 'all' rule or starts at the top rule
 
-build: $(CLIB_OBJ) $(D_SRC) $(SIM_TARGET)
+build: $(CLIB_OBJ) $(D_SRC) $(SIM_TARGET) 
 	$(DD) $(DFLAGS) $(ALL_SRC_FILES) $(CLIB_OBJ) $(COMEDILIB) -of$(TARGET) 
 
 $(CLIB_OBJ): $(CLIB_SRC)
@@ -56,12 +60,15 @@ $(CLIB_OBJ): $(CLIB_SRC)
 		$(CC) $(CFLAGS) -c $$file.c -o $$file.o ; \
 	done
 
-$(SIM_TARGET):
+$(SIM_TARGET): sim_port
 	$(DD) $(DFLAGS) $(SIM_SRC) -of$(SIM_TARGET)
+
+sim_port:
+	sed -e s/15657/$$(( $(SIM_PORT) + $(PORT) ))/ simulator_default.con > $(SIM_CON_FILE)
 
 clean:
 	rm -r ./build
-	rm $(CLIB_OBJ) $(TARGET) $(SIM_TARGET)
+	rm $(CLIB_OBJ) $(TARGET) $(TARGET).o $(SIM_TARGET) $(SIM_CON_FILE)
 
 test:
 	@echo "TOP =" $(TOP)
