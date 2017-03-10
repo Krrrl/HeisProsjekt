@@ -105,7 +105,7 @@ void updatePeerList(PeerList list)
  */
 void messengerThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
-	ref shared NonBlockingChannel!message_t toElevatorChn,
+	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
     ref shared NonBlockingChannel!PeerList peerListChn,
 	)
 {
@@ -127,7 +127,7 @@ void messengerThread(
 			     )
             {
                 debug writeln("messenger: passing delegate to keeper");
-				toElevatorChn.insert(receivedToNetworkOrder);
+				ordersToThisElevatorChn.insert(receivedToNetworkOrder);
             }
 			else
             {
@@ -144,6 +144,8 @@ void messengerThread(
 		{
 			writeln("messenger: received order from network");
 			writeln(" >> ", orderFromNetwork);
+			ordersToThisElevatorChn.insert(orderFromNetwork);
+			
 		},
 			(PeerList list)
 		{

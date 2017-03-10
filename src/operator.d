@@ -3,7 +3,9 @@ import core.time,
        std.stdio,
        std.string,
        std.conv,
-       std.concurrency;
+       std.concurrency,
+       std.datetime,
+       std.algorithm.searching;
 
 import udp_bcast,
        peers;
@@ -26,17 +28,39 @@ enum state_t
 	IDLE
 }
 
-private shared state_t _currentState;
-private shared int _currentFloor;
+private shared state_t currentState = state_t.INIT;
+private shared int currentFloor;
+
+private int[][button_type_t] ordersForThisElevator;
 
 state_t getCurrentState()
 {
-	return _currentState;
+	return currentState;
 }
 
 int getCurrentFloor()
 {
-	return _currentFloor;
+	return currentFloor;
+}
+
+void updateOrdersForThisElevator(OrderList orders)
+{
+	ordersForThisElevator[button_type_t.UP] = orders.upQueue.dup;
+	ordersForThisElevator[button_type_t.DOWN] = orders.downQueue.dup;
+	ordersForThisElevator[button_type_t.INTERNAL] = orders.internalQueue.dup;
+}
+
+message_t createExpediteOrder(int floor)
+{
+	message_t newExpediteOrder;
+	newExpediteOrder.header = message_header_t.expediteOrder;
+	newExpediteOrder.senderID = getMyID();
+	newExpediteOrder.orderFloor = floor;
+	newExpediteOrder.currentState = currentState;
+	newExpediteOrder.currentFloor = currentFloor;
+	newExpediteOrder.timestamp = Clock.currTime().stdTime;
+
+	return newExpediteOrder;
 }
 
 /*
@@ -47,16 +71,100 @@ int getCurrentFloor()
  * param toNetworkChn: channel directed to external network
  */
 void operatorThread(
-	ref shared NonBlockingChannel!message_t toElevatorChn,
-	ref shared NonBlockingChannel!message_t toNetworkChn
+	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
+	ref shared NonBlockingChannel!message_t toNetworkChn,
+	ref shared NonBlockingChannel!OrderList operatorsOrdersChn
 	)
 {
 	debug writelnGreen("    [x] operatorThread");
 
+	OrderList ordersUpdate;
+	updateOrdersForThisElevator(ordersUpdate);
+
 	while (true)
 	{
 
-		// Check lift sensors
+		/* Check for update in orders for this elevator */
+		if (operatorsOrdersChn.extract(ordersUpdate))
+		{
+			debug writelnOrange("operator: updating my orders");
+			debug writeln(ordersUpdate);
+			updateOrdersForThisElevator(ordersUpdate);
+			debug writeln(ordersForThisElevator);
+		}
+
+		/* Read floor sensors */
+		currentFloor = elev_get_floor_sensor_signal();
+
+		/* Do state dependent actions */
+		switch(getCurrentState())
+		{
+			case (state_t.INIT):
+			{
+				// Find a floor, go up/down?
+				// Wait for syncInfo?
+
+				/* Go to idle */
+				currentState = state_t.IDLE;
+
+				break;
+			}
+			case (state_t.GOING_UP):
+			{
+				if (button_type_t.UP in ordersForThisElevator)
+				{
+					if (canFind(ordersForThisElevator[button_type_t.UP], currentFloor))
+					{
+						debug writelnOrange("operator: FLOORSTOP");
+						currentState = state_t.FLOORSTOP;
+					}
+				}
+				if (button_type_t.UP in ordersForThisElevator)
+				{
+					if (canFind(ordersForThisElevator[button_type_t.UP], currentFloor))
+					{
+						debug writelnOrange("operator: FLOORSTOP");
+						currentState = state_t.FLOORSTOP;
+					}
+				}
+				break;
+			}
+			case (state_t.GOING_DOWN):
+			{
+				if (canFind(ordersForThisElevator[button_type_t.DOWN], currentFloor)
+					|| canFind(ordersForThisElevator[button_type_t.INTERNAL], currentFloor))
+				{
+					debug writelnOrange("operator: FLOORSTOP");
+					currentState = state_t.FLOORSTOP;
+				}
+				break;
+			}
+			case (state_t.FLOORSTOP):
+			{
+				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+
+				// Open door & Set doorlight
+				// Send expedite
+				// Goto Floorstop
+				// Start timer
+
+				// Timeout
+				debug writelnOrange("operator: IDLE");
+				currentState = state_t.IDLE;
+				break;
+			}
+
+			case (state_t.IDLE):
+			{
+				/* Check for new orders */
+
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
 	}
 }
 

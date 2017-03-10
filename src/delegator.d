@@ -9,6 +9,14 @@ import main,
        iolib,
        operator;
 
+void createDelegateOrder(ref message_t newOrder)
+{
+    newOrder.senderID = messenger.getMyID();
+    newOrder.currentState = getCurrentState();
+    newOrder.currentFloor = getCurrentFloor();
+    newOrder.timestamp = Clock.currTime().stdTime;
+    newOrder.targetID = findMatch(newOrder.orderFloor, newOrder.orderDirection);
+}
 /*
  * @brief Thread responsible for delegating orders that haven't been delegated yet
  *
@@ -16,7 +24,7 @@ import main,
  * @param locallyPlacedOrdersChn: channel with
  */
 void delegatorThread(
-    ref shared NonBlockingChannel!message_t toElevatorChn,
+    ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
     ref shared NonBlockingChannel!message_t toNetworkChn,
     ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
     )
@@ -56,16 +64,14 @@ void delegatorThread(
         message_t newOrder;
         if (ordersToBeDelegatedChn.extract(newOrder))
         {
-            newOrder.senderID = messenger.getMyID();
-            newOrder.currentState = getCurrentState();
-            newOrder.currentFloor = getCurrentFloor();
-            newOrder.timestamp = Clock.currTime().stdTime;
-
-            newOrder.targetID = findMatch(newOrder.orderFloor, newOrder.orderDirection);
+            createDelegateOrder(newOrder);
+            
 
             //debug writeln(newOrder);
 
             toNetworkChn.insert(newOrder);
+
+            // TODO: Wait and check for confirm. Poll keeper for confirm? Po
         }
 	}
 }

@@ -19,13 +19,13 @@ import debugUtils,
  * @details watchdogThread sends orphaned orders of timed out elevators to the delegator
  *
  * @param toNetworkChn: channel directed to external network
- * @param toElevatorChn: channel directed to this elevator
+ * @param ordersToThisElevatorChn: channel directed to this elevator
  * @param elevatorID: the ID of this elevator
  */
 void watchdogThread(
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
 	ref shared NonBlockingChannel!message_t toNetworkChn,
-	ref shared NonBlockingChannel!message_t toElevatorChn,
+	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
     ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
 	)
 {
