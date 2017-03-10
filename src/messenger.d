@@ -8,6 +8,7 @@ import std.stdio,
 
 
 import main,
+       debugUtils,
        udp_bcast,
        peers,
        channels,
@@ -76,9 +77,22 @@ struct message_t
 
 private shared ubyte _myID = 0;
 
+private PeerList peerList;
+
 ubyte getMyID()
 {
 	return _myID;
+}
+
+PeerList getPeerList()
+{
+	return peerList;
+}
+
+void updatePeerList(PeerList list)
+{
+    peerList = list;
+    writeln(" >> PeerList", getPeerList());
 }
 
 /*
@@ -89,16 +103,17 @@ ubyte getMyID()
  * @param toElevatorChn: channel directed to this elevator TODO: check if names correspond to use
  * @param elevatorID: the ID of this elevator
  */
-
 void messengerThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t toElevatorChn,
+    ref shared NonBlockingChannel!PeerList peerListChn,
 	)
 {
-	debug writeln("    [x] messengerThread");
+	debug writelnGreen("    [x] messengerThread");
 	Tid peerTx = peers.init;
 	_myID = peers.id;
-	Tid networkTid = udp_bcast.init!(message_t)(getMyID, thisTid());
+    debug writeln("messenger: myID is [", getMyID(), "]");
+	Tid networkTid = udp_bcast.init!(message_t)(getMyID(), thisTid());
 
 	message_t receivedToNetworkOrder;
 	message_t receivedToElevatorOrder;
@@ -133,7 +148,8 @@ void messengerThread(
 			(PeerList list)
 		{
 			writeln("messenger: received PeerList from network");
-			writeln(" >> ", list);
+            updatePeerList(list);
+            peerListChn.insert(list);
 		},
 			(Variant v)
 		{

@@ -8,7 +8,8 @@ import core.time,
 import udp_bcast,
        peers;
 
-import channels,
+import debugUtils,
+       channels,
        keeperOfSets,
        messenger,
        iolib;
@@ -28,7 +29,7 @@ void watchdogThread(
     ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
 	)
 {
-	debug writeln("    [x] watchdogThread");
+	debug writelnGreen("    [x] watchdogThread");
 
     // Wait for other threads to initialize before starting the Night's Watch
     Thread.sleep(msecs(20));

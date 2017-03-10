@@ -2,6 +2,7 @@ import std.stdio,
        std.datetime;
 
 import main,
+       debugUtils,
        channels,
        keeperOfSets,
        messenger,
@@ -20,6 +21,7 @@ void delegatorThread(
     ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
     )
 {
+	debug writelnGreen("    [x] delegatorThread");
 	/* Construct prevState for all buttons */
 	bool[main.nrOfFloors][3] buttonPrevMatrix = false;
 

@@ -68,7 +68,7 @@ sim_port:
 
 clean:
 	rm -r ./build
-	rm $(CLIB_OBJ) $(TARGET) $(TARGET).o $(SIM_TARGET) $(SIM_CON_FILE)
+	rm $(CLIB_OBJ) $(TARGET) $(SIM_TARGET) $(SIM_CON_FILE)
 
 test:
 	@echo "TOP =" $(TOP)

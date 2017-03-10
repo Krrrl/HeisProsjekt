@@ -8,8 +8,9 @@ import core.time,
 import udp_bcast,
        peers;
 
-import channels,
-       main,
+import main,
+       channels,
+       debugUtils,
        keeperOfSets,
        messenger,
        watchdog,
@@ -18,11 +19,11 @@ import channels,
 
 enum state_t
 {
-	INIT = 0,
-	IDLE,
-	GOING_DOWN,
-	GOING_UP,
-	FLOORSTOP
+	GOING_UP = 0,       // casts to button_type_t UP
+	GOING_DOWN = 1,     // casts to button_type_t DOWN
+	FLOORSTOP = 2,
+	INIT,
+	IDLE
 }
 
 private shared state_t _currentState;
@@ -50,7 +51,7 @@ void operatorThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn
 	)
 {
-	debug writeln("    [x] operatorThread");
+	debug writelnGreen("    [x] operatorThread");
 
 	while (true)
 	{

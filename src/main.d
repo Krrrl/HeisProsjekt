@@ -10,6 +10,7 @@ import udp_bcast,
        peers;
 
 import channels,
+       debugUtils,
        keeperOfSets,
        messenger,
        watchdog,
@@ -31,6 +32,8 @@ void main(string[] args)
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
 	// channel for putting orders that need to be delegated
 	shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
+    // channel for passing peer list to Keeper
+    shared NonBlockingChannel!PeerList peerListChn = new NonBlockingChannel!PeerList;
 
 	// channel for
 
@@ -44,9 +47,9 @@ void main(string[] args)
 	debug
 	{
 		if (ioInterface == elev_type.ET_Simulation)
-			writeln("    [x] Simulator");
+			writelnGreen("    [x] Simulator");
 		else
-			writeln("    [x] Comedilib");
+			writelnGreen("    [x] Comedilib");
 	}
 
 	debug writeln("Spawning Threads ...");
@@ -61,12 +64,14 @@ void main(string[] args)
         &keeperOfSetsThread,
         toNetworkChn,
         toElevatorChn,
-        watchdogFeedChn);
+        watchdogFeedChn,
+        peerListChn);
 
     messengerTid = spawnLinked(
         &messengerThread,
         toNetworkChn,
-        toElevatorChn);
+        toElevatorChn,
+        peerListChn);
 
     watchdogTid = spawnLinked(
         &watchdogThread,
@@ -91,8 +96,9 @@ void main(string[] args)
 		receive(
 			(LinkTerminated e)
 		{
-			writeln("\x1B[31m *** main: A THREAD HAS TERMINATED ***");
+			writelnRed("*** main: A THREAD HAS TERMINATED ***");
             writeln(e);
+
             // TODO: kill/restart application
             Array!Tid listOfTids;
             listOfTids.insert(messengerTid);
