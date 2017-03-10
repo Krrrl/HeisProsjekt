@@ -66,7 +66,7 @@ $(SIM_TARGET): port
 
 port:
 ifneq ($(PORT), 0)
-	sed -e s/15657/$$(( $(SIM_PORT) + $(PORT) ))/ simulator_default.con > $(SIM_CON_FILE)
+	sed -e s/15607/$$(( $(SIM_PORT) + $(PORT) ))/ simulator_default.con > $(SIM_CON_FILE)
 	sed -e s/default/$(PORT)/ net_default.con > $(CON_FILE)
 else
 	cat simulator_default.con > $(SIM_CON_FILE)
