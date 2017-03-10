@@ -1,5 +1,6 @@
 import std.stdio,
        std.datetime,
+       std.conv,
        std.algorithm.searching;
 
 import main,
@@ -21,8 +22,8 @@ public:
 	ubyte ID;
 }
 
-private elevator_t[ubyte] aliveElevators;
-private elevator_t[ubyte] inactiveElevators;
+shared elevator_t[ubyte] aliveElevators;
+shared elevator_t[ubyte] inactiveElevators;
 
 void reviveElevator(ubyte id)
 {
@@ -51,33 +52,56 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		return getMyID();
     }
 
-	elevator_t[ubyte] candidates = aliveElevators.dup;
-	debug writeln("number of candidtes:", candidates.keys.length);
+	elevator_t[ubyte] candidates = (cast(elevator_t[ubyte])aliveElevators).dup;
+    elevator_t[ubyte] entrants = candidates.dup;
+
+	debug writelnYellow("keeper: Candidates at start of matching: ");
+    debug writeln(candidates.keys);
+
+    // TODO: What do we want to prioritise? What to filter on?
 
 	// check for going in same direction?
-	foreach (id; candidates.byKey)
+	foreach (entrant; entrants)
 	{
-		if (cast(button_type_t)candidates[id].currentState != orderDirection && candidates.length > 1)
+        // TODO: I feel like this logic doesn't make sense. If there is only one elevator going up and we have an up order - but it is above the order, then it might not be the best match; a elevator going down but soon turning around could be faster.
+		if (cast(button_type_t)entrant.currentState != orderDirection)
 		{
-			candidates.remove(id);
+			entrants.remove(entrant.ID);
 			debug writeln("removing candidate: ", id);
-			debug writeln("remaining candidates: ", candidates);
 		}
 	}
 
+    // If no entrant elevators survived, replenish them all
+    if (entrants.length == 0)
+    {
+        entrants = candidates.dup;
+    }
+    // Else, update the current candidates
+    else
+    {
+        candidates = entrants.dup;
+    }
+
 	// check for being below/above?
-	// check for smallest distance
-	debug writeln("number of candidtes:", candidates.keys.length);
-	return aliveElevators[candidates.keys[0]].ID;
+        // TODO: More filters?
+
+	// check for smallest distance ?? 
+
+
+	debug writelnYellow("keeper: Candidates at end of match: ");
+    debug writeln(candidates.keys);
+	//return aliveElevators[candidates.keys[0]].ID;
+    return getMyID(); // TODO: actually return a matched id
 }
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 {
 	// TODO: check that targetID is in aliveElevators?
-	if (targetID !in inactiveElevators)
+	if (targetID in inactiveElevators)
 	{
 		// Do what? Error handling?
-        debug writelnYellow("keeper: trying to add to inactive's list");
+        debug writelnYellow("keeper: tried to add to inactive's list");
+        return;
 	}
 	if (targetID !in aliveElevators)
 		aliveElevators[targetID] = elevator_t();
@@ -240,7 +264,6 @@ void keeperOfSetsThread(
 			case message_header_t.syncInfo:
 			{
 				if (getMyID() == receivedFromNetwork.targetID)
-					//TODO: Skulle ikke mottagning av syncinfo være i init i main før threads blir startet?
 					syncMySet(receivedFromNetwork.syncInternalList);
 				break;
 			}
@@ -260,6 +283,8 @@ void keeperOfSetsThread(
 			}
 		}
 
+        
+        // Update lists of elevators
 		PeerList extractedPeerList = PeerList();
 		if (peerListChn.extract(extractedPeerList))
 		{
@@ -281,7 +306,6 @@ void keeperOfSetsThread(
                     retireElevator(id);
                 }
             }
-            debug writeln("keeper: alive ", aliveElevators.keys);
             debug writeln("keeper: inactive ", inactiveElevators.keys);
         }
 

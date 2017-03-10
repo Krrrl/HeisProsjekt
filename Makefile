@@ -38,6 +38,7 @@ SIM_TARGET = sim_server
 SIM_PORT = 15657
 PORT = 0
 SIM_CON_FILE = simulator.con
+CON_FILE = net.con
 
 # Make rules begin here
 
@@ -60,15 +61,21 @@ $(CLIB_OBJ): $(CLIB_SRC)
 		$(CC) $(CFLAGS) -c $$file.c -o $$file.o ; \
 	done
 
-$(SIM_TARGET): sim_port
+$(SIM_TARGET): port
 	$(DD) $(DFLAGS) $(SIM_SRC) -of$(SIM_TARGET)
 
-sim_port:
+port:
+ifneq ($(PORT), 0)
 	sed -e s/15657/$$(( $(SIM_PORT) + $(PORT) ))/ simulator_default.con > $(SIM_CON_FILE)
+	sed -e s/default/$(PORT)/ net_default.con > $(CON_FILE)
+else
+	cat simulator_default.con > $(SIM_CON_FILE)
+	cat net_default.con > $(CON_FILE)
+endif
 
 clean:
 	rm -r ./build
-	rm $(CLIB_OBJ) $(TARGET) $(SIM_TARGET) $(SIM_CON_FILE)
+	rm $(CLIB_OBJ) $(TARGET) $(SIM_TARGET) $(SIM_CON_FILE) $(CON_FILE)
 
 test:
 	@echo "TOP =" $(TOP)

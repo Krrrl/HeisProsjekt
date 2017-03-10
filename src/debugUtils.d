@@ -14,3 +14,8 @@ void writelnGreen(string text)
 {
     writeln("\033[32m", text, "\033[0m");
 }
+
+void writelnBlue(string text)
+{
+    writeln("\033[34m", text, "\033[0m");
+}

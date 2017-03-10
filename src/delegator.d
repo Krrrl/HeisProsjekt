@@ -66,10 +66,7 @@ void delegatorThread(
             //debug writeln(newOrder);
 
             toNetworkChn.insert(newOrder);
-
         }
-
-
 	}
 }
 

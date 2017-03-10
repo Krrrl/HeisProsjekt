@@ -122,9 +122,8 @@ void messengerThread(
 	{
 		if (toNetworkChn.extract(receivedToNetworkOrder))
 		{
-
 			if ( (receivedToNetworkOrder.header == message_header_t.delegateOrder)
-			     && (receivedToNetworkOrder.orderDirection == button_type_t.INTERNAL)
+			     && (receivedToNetworkOrder.targetID == getMyID())
 			     )
             {
                 debug writeln("messenger: passing delegate to keeper");
@@ -132,9 +131,10 @@ void messengerThread(
             }
 			else
             {
-                debug writeln("messenger: passing delegate to network");
+                debug writeln("messenger: passing order to network");
 				networkTid.send(receivedToNetworkOrder);
             }
+
 		}
 
 		/* Only the network thread uses receive */
@@ -147,13 +147,13 @@ void messengerThread(
 		},
 			(PeerList list)
 		{
-			writeln("messenger: received PeerList from network");
+			writelnBlue("messenger: received PeerList from network");
             updatePeerList(list);
             peerListChn.insert(list);
 		},
 			(Variant v)
 		{
-			writeln("messenger: received Variant from network");
+			writelnYellow("messenger: received Variant from network");
 			writeln(">>> ", v);
 		}
 			);
