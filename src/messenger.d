@@ -134,7 +134,6 @@ void messengerThread(
                 debug writeln("messenger: passing order to network");
 				networkTid.send(receivedToNetworkOrder);
             }
-
 		}
 
 		/* Only the network thread uses receive */
@@ -159,7 +158,6 @@ void messengerThread(
 			writeln(">>> ", v);
 		}
 			);
-		debug Thread.sleep(msecs(10));
 	}
 }
 

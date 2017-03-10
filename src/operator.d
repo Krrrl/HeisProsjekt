@@ -5,7 +5,8 @@ import core.time,
        std.conv,
        std.concurrency,
        std.datetime,
-       std.algorithm.searching;
+       std.algorithm.searching,
+       std.algorithm.sorting;
 
 import udp_bcast,
        peers;
@@ -27,9 +28,10 @@ enum state_t
 	INIT,
 	IDLE
 }
-
+private shared int currentFloor = 0;
+private int previousValidFloor = 0;
 private shared state_t currentState = state_t.INIT;
-private shared int currentFloor;
+private state_t previousDirection = state_t.INIT;
 
 private int[][button_type_t] ordersForThisElevator;
 
@@ -45,9 +47,11 @@ int getCurrentFloor()
 
 void updateOrdersForThisElevator(OrderList orders)
 {
+	debug writelnOrange("operator: updating my orders");
 	ordersForThisElevator[button_type_t.UP] = orders.upQueue.dup;
 	ordersForThisElevator[button_type_t.DOWN] = orders.downQueue.dup;
 	ordersForThisElevator[button_type_t.INTERNAL] = orders.internalQueue.dup;
+	debug writeln(ordersForThisElevator);
 }
 
 message_t createExpediteOrder(int floor)
@@ -61,6 +65,102 @@ message_t createExpediteOrder(int floor)
 	newExpediteOrder.timestamp = Clock.currTime().stdTime;
 
 	return newExpediteOrder;
+}
+
+bool shouldStopAtFloor(int floor)
+{
+	switch(currentState)
+	{
+		case(state_t.GOING_UP):
+		{
+			if (ordersForThisElevator[button_type_t.INTERNAL].length)
+			{
+				if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
+					return true;
+			}
+			
+			if (ordersForThisElevator[button_type_t.UP].length)
+			{
+				if (canFind(ordersForThisElevator[button_type_t.UP], floor))
+					return true;
+			}
+			if (ordersForThisElevator[button_type_t.DOWN].length)
+			{
+				if (sort(ordersForThisElevator[button_type_t.DOWN].dup)[$ - 1] == floor)
+					return true;
+			}
+			return false;
+		}
+		case(state_t.GOING_DOWN):
+		{
+			if (ordersForThisElevator[button_type_t.INTERNAL].length)
+			{
+				if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
+					return true;
+			}
+			
+			if (ordersForThisElevator[button_type_t.DOWN].length)
+			{
+				if (canFind(ordersForThisElevator[button_type_t.DOWN], floor))
+					return true;
+			}
+			if (ordersForThisElevator[button_type_t.UP].length)
+			{
+				if (sort(ordersForThisElevator[button_type_t.UP].dup)[0] == floor)
+					return true;
+			}
+			return false;
+		}
+		case(state_t.FLOORSTOP):
+		{
+			//TODO: 
+			return false;
+		}
+		default:
+		{
+			return false;
+		}
+	}
+}
+
+elev_motor_direction_t getDirectionToNextOrder(int floor)
+{
+	int[] allOrders = ordersForThisElevator[button_type_t.UP] ~ ordersForThisElevator[button_type_t.DOWN] ~ ordersForThisElevator[button_type_t.INTERNAL];
+
+	if (allOrders.length)
+	{
+		/* Sort all orders in ascending order */
+		sort(allOrders);
+		switch(previousDirection)
+		{
+			default:
+			case(state_t.GOING_UP):
+			{
+				 if (allOrders.dup[$ - 1] > floor)
+				 {
+				 	return elev_motor_direction_t.DIRN_UP;
+				 }
+				 if (allOrders.dup[0] < floor)
+				 {
+				 	return elev_motor_direction_t.DIRN_DOWN;
+				 }
+				 break;
+			}
+			case(state_t.GOING_DOWN):
+			{
+				 if (allOrders[0] < floor)
+				 {
+				 	return elev_motor_direction_t.DIRN_UP;
+				 }
+				 if (allOrders[$ - 1] > floor)
+				 {
+				 	return elev_motor_direction_t.DIRN_DOWN;
+				 }
+				 break;
+			}
+		}
+	}
+	return elev_motor_direction_t.DIRN_STOP;
 }
 
 /*
@@ -87,65 +187,59 @@ void operatorThread(
 		/* Check for update in orders for this elevator */
 		if (operatorsOrdersChn.extract(ordersUpdate))
 		{
-			debug writelnOrange("operator: updating my orders");
-			debug writeln(ordersUpdate);
 			updateOrdersForThisElevator(ordersUpdate);
-			debug writeln(ordersForThisElevator);
 		}
 
 		/* Read floor sensors */
 		currentFloor = elev_get_floor_sensor_signal();
+		if (currentFloor != -1)
+		{
+			previousValidFloor = currentFloor;
+		}
 
 		/* Do state dependent actions */
-		switch(getCurrentState())
+		switch(currentState)
 		{
 			case (state_t.INIT):
 			{
 				// Find a floor, go up/down?
 				// Wait for syncInfo?
-
+				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 				/* Go to idle */
+				debug writelnOrange("operator: IDLE");
 				currentState = state_t.IDLE;
 
 				break;
 			}
 			case (state_t.GOING_UP):
 			{
-				if (button_type_t.UP in ordersForThisElevator)
+				if (shouldStopAtFloor(currentFloor))
 				{
-					if (canFind(ordersForThisElevator[button_type_t.UP], currentFloor))
-					{
-						debug writelnOrange("operator: FLOORSTOP");
-						currentState = state_t.FLOORSTOP;
-					}
-				}
-				if (button_type_t.UP in ordersForThisElevator)
-				{
-					if (canFind(ordersForThisElevator[button_type_t.UP], currentFloor))
-					{
-						debug writelnOrange("operator: FLOORSTOP");
-						currentState = state_t.FLOORSTOP;
-					}
+					debug writelnOrange("operator: FLOORSTOP");
+					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+					
+					previousDirection = state_t.GOING_UP;
+					currentState = state_t.FLOORSTOP;
 				}
 				break;
 			}
 			case (state_t.GOING_DOWN):
 			{
-				if (canFind(ordersForThisElevator[button_type_t.DOWN], currentFloor)
-					|| canFind(ordersForThisElevator[button_type_t.INTERNAL], currentFloor))
+				if (shouldStopAtFloor(currentFloor))
 				{
 					debug writelnOrange("operator: FLOORSTOP");
+					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+					previousDirection = state_t.GOING_DOWN;
 					currentState = state_t.FLOORSTOP;
 				}
 				break;
 			}
 			case (state_t.FLOORSTOP):
 			{
-				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-
+				
 				// Open door & Set doorlight
-				// Send expedite
-				// Goto Floorstop
 				// Start timer
 
 				// Timeout
@@ -157,7 +251,19 @@ void operatorThread(
 			case (state_t.IDLE):
 			{
 				/* Check for new orders */
-
+				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
+				if (directionToNextOrder == elev_motor_direction_t.DIRN_UP)
+				{
+					debug writelnOrange("operator: GOING_UP");
+					elev_set_motor_direction(directionToNextOrder);
+					currentState = state_t.GOING_UP;
+				}
+				if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
+				{
+					debug writelnOrange("operator: GOING_DOWN");
+					elev_set_motor_direction(directionToNextOrder);
+					currentState = state_t.GOING_DOWN;
+				}
 				break;
 			}
 			default:
@@ -167,7 +273,3 @@ void operatorThread(
 		}
 	}
 }
-
-
-
-
