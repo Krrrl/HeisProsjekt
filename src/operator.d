@@ -58,7 +58,7 @@ int getPreviousValidFloor()
 	return previousValidFloor;
 }
 
-void updateOrdersForThisElevator(OrderList orders)
+void updateOrdersForThisElevator(orderList_t orders)
 {
 	debug write("operator: my orders ...  ");
 	ordersForThisElevator[button_type_t.UP]         = orders.upQueue.dup;
@@ -91,14 +91,15 @@ bool shouldStopAtFloor(int floor)
 	if (!cast(bool)allOrders.length)
 		return true;
 
+	if (ordersForThisElevator[button_type_t.INTERNAL].length)
+		if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
+			return true;
+
 	switch (currentState)
 	{
 	case (state_t.GOING_UP):
 	{
-		if (ordersForThisElevator[button_type_t.INTERNAL].length)
-			if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
-				return true;
-
+        /* Check if */
 		if (ordersForThisElevator[button_type_t.UP].length)
 			if (canFind(ordersForThisElevator[button_type_t.UP], floor))
 				return true;
@@ -122,10 +123,6 @@ bool shouldStopAtFloor(int floor)
 	}
 	case (state_t.GOING_DOWN):
 	{
-		if (ordersForThisElevator[button_type_t.INTERNAL].length)
-			if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
-				return true;
-
 		if (ordersForThisElevator[button_type_t.DOWN].length)
 			if (canFind(ordersForThisElevator[button_type_t.DOWN], floor))
 				return true;
@@ -201,17 +198,16 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 void operatorThread(
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t toNetworkChn,
-	ref shared NonBlockingChannel!OrderList operatorsOrdersChn
+	ref shared NonBlockingChannel!orderList_t operatorsOrdersChn
 	)
 {
 	debug writelnGreen("    [x] operatorThread");
 
-	OrderList ordersUpdate;
+	orderList_t ordersUpdate;
 	updateOrdersForThisElevator(ordersUpdate);
 
 	while (true)
 	{
-
 		/* Check for update in orders for this elevator */
 		if (operatorsOrdersChn.extract(ordersUpdate))
 			updateOrdersForThisElevator(ordersUpdate);
@@ -278,12 +274,12 @@ void operatorThread(
 		}
 		case (state_t.FLOORSTOP):
 		{
-            /* Check for new orders */
-            if(shouldStopAtFloor(previousValidFloor))
-            {
-                toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-	            timeAtFloorStop = Clock.currTime.toUnixTime();
-            }
+			/* Check for new orders */
+			if (shouldStopAtFloor(previousValidFloor))
+			{
+				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+				timeAtFloorStop = Clock.currTime.toUnixTime();
+			}
 
 			if (Clock.currTime.toUnixTime() > (timeAtFloorStop + stopDuration))
 			{

@@ -182,7 +182,7 @@ void updateHeartbeat(ubyte targetID, state_t currentState, int currentFloor, lon
 
 void sendSyncInfo(ubyte targetID)
 {
-
+    
 }
 
 void syncMySet(shared bool[int] internalSet)
@@ -237,7 +237,6 @@ void keeperOfSetsThread(
 					confirmingOrder.currentFloor    = getPreviousValidFloor();
 					confirmingOrder.timestamp       = Clock.currTime().toUnixTime();
 					toNetworkChn.insert(confirmingOrder);
-
 				}
 				break;
 			}

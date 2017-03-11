@@ -74,7 +74,6 @@ struct message_t
 	shared bool[int] syncInternalList;
 }
 
-
 private shared ubyte _myID = 0;
 
 private PeerList peerList;
