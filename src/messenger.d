@@ -71,7 +71,7 @@ struct message_t
 	state_t currentState;
 	int currentFloor;
 	long timestamp;
-	shared bool[int] syncInternalList;
+	orderList_t syncInfo;
 }
 
 private shared ubyte _myID = 0;
