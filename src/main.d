@@ -32,10 +32,10 @@ void main(string[] args)
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
 	/* channel for putting orders that need to be delegated */
 	shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
-  /* channel for passing peer list to Keeper */
-  shared NonBlockingChannel!PeerList peerListChn = new NonBlockingChannel!PeerList;
+	/* channel for passing peer list to Keeper */
+	shared NonBlockingChannel!PeerList peerListChn = new NonBlockingChannel!PeerList;
 	/* channel for updating the operator on this elevators current orders*/
-  shared NonBlockingChannel!OrderList operatorsOrdersChn = new NonBlockingChannel!OrderList;
+	shared NonBlockingChannel!OrderList operatorsOrdersChn = new NonBlockingChannel!OrderList;
 
 	debug writeln("Initializing lift hardware ...");
 	elev_type ioInterface = elev_type.ET_Comedi;
@@ -47,9 +47,9 @@ void main(string[] args)
 	debug
 	{
 		if (ioInterface == elev_type.ET_Simulation)
-			writelnGreen("    [x] Simulator");
+			debug writelnGreen("    [x] Simulator");
 		else
-			writelnGreen("    [x] Comedilib");
+			debug writelnGreen("    [x] Comedilib");
 	}
 
 	debug writeln("Spawning Threads ...");
@@ -60,60 +60,58 @@ void main(string[] args)
 	Tid delegatorTid;
 
 
-    keeperOfSetsTid = spawnLinked(
-        &keeperOfSetsThread,
-        toNetworkChn,
-        ordersToThisElevatorChn,
-        watchdogFeedChn,
-        operatorsOrdersChn,
-        peerListChn);
+	keeperOfSetsTid = spawnLinked(
+		&keeperOfSetsThread,
+		toNetworkChn,
+		ordersToThisElevatorChn,
+		watchdogFeedChn,
+		operatorsOrdersChn,
+		peerListChn);
 
-    messengerTid = spawnLinked(
-        &messengerThread,
-        toNetworkChn,
-        ordersToThisElevatorChn,
-        peerListChn);
+	messengerTid = spawnLinked(
+		&messengerThread,
+		toNetworkChn,
+		ordersToThisElevatorChn,
+		peerListChn);
 
-    watchdogTid = spawnLinked(
-        &watchdogThread,
-        watchdogFeedChn,
-        toNetworkChn,
-        ordersToThisElevatorChn,
-        ordersToBeDelegatedChn);
+	watchdogTid = spawnLinked(
+		&watchdogThread,
+		watchdogFeedChn,
+		toNetworkChn,
+		ordersToThisElevatorChn,
+		ordersToBeDelegatedChn);
 
-    operatorTid = spawnLinked(
-        &operatorThread,
-        ordersToThisElevatorChn,
-        toNetworkChn,
-        operatorsOrdersChn);
+	operatorTid = spawnLinked(
+		&operatorThread,
+		ordersToThisElevatorChn,
+		toNetworkChn,
+		operatorsOrdersChn);
 
-    delegatorTid = spawnLinked(
-        &delegatorThread,
-        ordersToThisElevatorChn,
-        toNetworkChn,
-        ordersToBeDelegatedChn);
-        
+	delegatorTid = spawnLinked(
+		&delegatorThread,
+		ordersToThisElevatorChn,
+		toNetworkChn,
+		ordersToBeDelegatedChn);
+
 	while (true)
 	{
 		receive(
 			(LinkTerminated e)
 		{
 			writelnRed("*** main: A THREAD HAS TERMINATED ***");
-            writeln(e);
+			writeln(e);
 
-            // TODO: use Tid's to kill all threads
-            Array!Tid listOfTids;
-            listOfTids.insert(messengerTid);
-            listOfTids.insert(keeperOfSetsTid);
-            listOfTids.insert(watchdogTid);
-            listOfTids.insert(operatorTid);
-            listOfTids.insert(delegatorTid);
+			// TODO: use Tid's to kill all threads
+			Array!Tid listOfTids;
+			listOfTids.insert(messengerTid);
+			listOfTids.insert(keeperOfSetsTid);
+			listOfTids.insert(watchdogTid);
+			listOfTids.insert(operatorTid);
+			listOfTids.insert(delegatorTid);
 
-            /* Stop motor forever to avoid undefined behaviour */
-            while (true)
-            {
-              elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-            }
+			/* Stop motor forever to avoid undefined behaviour */
+			while (true)
+				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 		}
 			);
 	}

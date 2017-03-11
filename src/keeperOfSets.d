@@ -25,11 +25,11 @@ public:
 	ubyte ID;
 }
 
-struct OrderList {
-    immutable(int)[] upQueue;
-    immutable(int)[] downQueue;
-    immutable(int)[] internalQueue;
-    //alias orders this;
+struct OrderList
+{
+	immutable(int)[] upQueue;
+	immutable(int)[] downQueue;
+	immutable(int)[] internalQueue;
 }
 
 shared elevator_t[ubyte] aliveElevators;
@@ -37,43 +37,41 @@ shared elevator_t[ubyte] inactiveElevators;
 
 void reviveElevator(ubyte id)
 {
-    aliveElevators[id] = inactiveElevators[id];
-    inactiveElevators.remove(id);
-    debug writeln("keeper: elevator [", id, "] REVIVED");
+	aliveElevators[id] = inactiveElevators[id];
+	inactiveElevators.remove(id);
+	debug writeln("keeper: elevator [", id, "] REVIVED");
 }
 
 void createElevator(ubyte id)
 {
-    aliveElevators[id] = elevator_t();
-    debug writeln("keeper: new elevator [", id, "] ALLOCATED");
+	aliveElevators[id] = elevator_t();
+	debug writeln("keeper: new elevator [", id, "] ALLOCATED");
 }
 
 void retireElevator(ubyte id)
 {
-    inactiveElevators[id] = aliveElevators[id];
-    aliveElevators.remove(id);
-    debug writeln("keeper: elevator [", id, "] RETIRED");
+	inactiveElevators[id] = aliveElevators[id];
+	aliveElevators.remove(id);
+	debug writeln("keeper: elevator [", id, "] RETIRED");
 }
 
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
 	if (orderDirection == button_type_t.INTERNAL)
-    {
 		return getMyID();
-    }
 
-	elevator_t[ubyte] candidates = (cast(elevator_t[ubyte])aliveElevators).dup;
-    elevator_t[ubyte] entrants = candidates.dup;
+	elevator_t[ubyte] candidates    = (cast(elevator_t[ubyte])aliveElevators).dup;
+	elevator_t[ubyte] entrants      = candidates.dup;
 
 	debug writelnYellow("keeper: Candidates at start of matching: ");
-    debug writeln(candidates.keys);
+	debug writeln(candidates.keys);
 
-    // TODO: What do we want to prioritise? What to filter on?
+	// TODO: What do we want to prioritise? What to filter on?
 
 	// check for going in same direction?
 	foreach (entrant; entrants)
 	{
-        // TODO: I feel like this logic doesn't make sense. If there is only one elevator going up and we have an up order - but it is above the order, then it might not be the best match; a elevator going down but soon turning around could be faster.
+		// TODO: I feel like this logic doesn't make sense. If there is only one elevator going up and we have an up order - but it is above the order, then it might not be the best match; a elevator going down but soon turning around could be faster.
 		if (cast(button_type_t)entrant.currentState != orderDirection)
 		{
 			entrants.remove(entrant.ID);
@@ -81,27 +79,23 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		}
 	}
 
-    // If no entrant elevators survived, replenish them all
-    if (entrants.length == 0)
-    {
-        entrants = candidates.dup;
-    }
-    // Else, update the current candidates
-    else
-    {
-        candidates = entrants.dup;
-    }
+	// If no entrant elevators survived, replenish them all
+	if (entrants.length == 0)
+		entrants = candidates.dup;
+	// Else, update the current candidates
+	else
+		candidates = entrants.dup;
 
 	// check for being below/above?
-        // TODO: More filters?
+	// TODO: More filters?
 
-	// check for smallest distance ?? 
+	// check for smallest distance ??
 
 
 	debug writelnYellow("keeper: Candidates at end of match: ");
-    debug writeln(candidates.keys);
+	debug writeln(candidates.keys);
 
-    return choice(candidates.keys); // TODO: actually return a matched id
+	return choice(candidates.keys); // TODO: actually return a matched id
 }
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
@@ -110,67 +104,61 @@ void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 	if (targetID in inactiveElevators)
 	{
 		// Do what? Error handling?
-        debug writelnYellow("keeper: tried to add to inactive's list");
-        return;
+		debug writelnYellow("keeper: tried to add to inactive's list");
+		return;
 	}
 	if (targetID !in aliveElevators)
 		aliveElevators[targetID] = elevator_t();
 	switch (orderDirection)
 	{
-		case button_type_t.DOWN:
-		{
-			if (orderFloor !in aliveElevators[targetID].downQueue)
-				aliveElevators[targetID].downQueue[orderFloor] = true;
-			break;
-		}
+	case button_type_t.DOWN:
+	{
+		if (orderFloor !in aliveElevators[targetID].downQueue)
+			aliveElevators[targetID].downQueue[orderFloor] = true;
+		break;
+	}
 
-		case button_type_t.UP:
-		{
-			if (orderFloor !in aliveElevators[targetID].upQueue)
-				aliveElevators[targetID].upQueue[orderFloor] = true;
-			break;
-		}
+	case button_type_t.UP:
+	{
+		if (orderFloor !in aliveElevators[targetID].upQueue)
+			aliveElevators[targetID].upQueue[orderFloor] = true;
+		break;
+	}
 
-		case button_type_t.INTERNAL:
-		{
-			if (orderFloor !in aliveElevators[targetID].internalQueue)
-				aliveElevators[targetID].internalQueue[orderFloor] = true;
-			break;
-		}
-		default:
-		{
-			break;
-		}
+	case button_type_t.INTERNAL:
+	{
+		if (orderFloor !in aliveElevators[targetID].internalQueue)
+			aliveElevators[targetID].internalQueue[orderFloor] = true;
+		break;
+	}
+	default:
+	{
+		break;
+	}
 	}
 }
 
 void removeFromList(ubyte targetID, int orderFloor)
 {
-    /* Remove up and down orders at orderFloor for all elevators */
-    foreach(elevator; aliveElevators)
-    {
-        if (orderFloor in elevator.downQueue)
-        {
-            elevator.downQueue.remove(orderFloor);
-        }
-        if (orderFloor in elevator.upQueue)
-        {
-            elevator.upQueue.remove(orderFloor);
-        }
-    }
-    /* Remove internal order only from the specific elevator */
-    if (targetID in aliveElevators)
-    {
-        if (orderFloor in aliveElevators[targetID].internalQueue)
-        {
-            aliveElevators[targetID].internalQueue.remove(orderFloor);
-        }
-    }
+	/* Remove up and down orders at orderFloor for all elevators */
+	foreach (elevator; aliveElevators)
+	{
+		if (orderFloor in elevator.downQueue)
+			elevator.downQueue.remove(orderFloor);
+		if (orderFloor in elevator.upQueue)
+			elevator.upQueue.remove(orderFloor);
+	}
+	/* Remove internal order only from the specific elevator */
+	if (targetID in aliveElevators)
+		if (orderFloor in aliveElevators[targetID].internalQueue)
+			aliveElevators[targetID].internalQueue.remove(orderFloor);
+
 }
 
 OrderList getElevatorsOrders(ubyte id)
 {
 	OrderList orders;
+
 	if (id in aliveElevators)
 	{
 		orders = OrderList(
@@ -232,140 +220,130 @@ void keeperOfSetsThread(
 		if (ordersToThisElevatorChn.extract(receivedFromNetwork))
 		{
 			switch (receivedFromNetwork.header)
-                {
-                case message_header_t.delegateOrder:
-                {
-                    if (receivedFromNetwork.targetID == getMyID())
-                    {
-                        /* Confirm order */
-                        message_t confirmingOrder;
-                        confirmingOrder.header = message_header_t.confirmOrder;
-                        confirmingOrder.senderID = messenger.getMyID();
-                        // TODO: [REMOVE THIS COMMENT ?] Setting targetID to the delegators sender ID, so that the delegator knows that it was its order we now confirm
-                        confirmingOrder.targetID = receivedFromNetwork.senderID;
-                        confirmingOrder.orderFloor = receivedFromNetwork.orderFloor;
-                        confirmingOrder.orderDirection = receivedFromNetwork.orderDirection;
-                        confirmingOrder.currentState = getCurrentState();
-                        confirmingOrder.currentFloor = getCurrentFloor();
-                        confirmingOrder.timestamp = Clock.currTime().stdTime;
-                        toNetworkChn.insert(confirmingOrder);
+			{
+			case message_header_t.delegateOrder:
+			{
+				if (receivedFromNetwork.targetID == getMyID())
+				{
+					/* Confirm order */
+					message_t confirmingOrder;
+					confirmingOrder.header          = message_header_t.confirmOrder;
+					confirmingOrder.senderID        = messenger.getMyID();
+					// TODO: [REMOVE THIS COMMENT ?] Setting targetID to the delegators sender ID, so that the delegator knows that it was its order we now confirm
+					confirmingOrder.targetID        = receivedFromNetwork.senderID;
+					confirmingOrder.orderFloor      = receivedFromNetwork.orderFloor;
+					confirmingOrder.orderDirection  = receivedFromNetwork.orderDirection;
+					confirmingOrder.currentState    = getCurrentState();
+					confirmingOrder.currentFloor    = getCurrentFloor();
+					confirmingOrder.timestamp       = Clock.currTime().stdTime;
+					toNetworkChn.insert(confirmingOrder);
 
-                    }
-                    break;
-                }
+				}
+				break;
+			}
 
-                case message_header_t.confirmOrder:
-                {
-                    /* Add to senders lists */
-                    addToList(
-                        receivedFromNetwork.senderID,
-                        receivedFromNetwork.orderDirection,
-                        receivedFromNetwork.orderFloor);
+			case message_header_t.confirmOrder:
+			{
+				/* Add to senders lists */
+				addToList(
+					receivedFromNetwork.senderID,
+					receivedFromNetwork.orderDirection,
+					receivedFromNetwork.orderFloor);
 
-                    /* Update operators orders if the new order is ours */
-                    if (receivedFromNetwork.senderID == getMyID())
-                    {
-                        operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
-                    }
+				/* Update operators orders if the new order is ours */
+				if (receivedFromNetwork.senderID == getMyID())
+					operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
 
-                    /* Set light if order is local-internal or external */
-                    if (receivedFromNetwork.targetID == getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
-                    {
-                        elev_set_button_lamp(
-                            cast(elev_button_type_t)receivedFromNetwork.orderDirection,
-                            receivedFromNetwork.orderFloor,
-                            1);
-                    }
-                    break;
-                }
+				/* Set light if order is local-internal or external */
+				if (receivedFromNetwork.targetID == getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
+				{
+					elev_set_button_lamp(
+						cast(elev_button_type_t)receivedFromNetwork.orderDirection,
+						receivedFromNetwork.orderFloor,
+						1);
+				}
+				break;
+			}
 
-                case message_header_t.expediteOrder:
-                {
-                    /* Remove from elevators lists */
-                    removeFromList(
-                        receivedFromNetwork.senderID,
-                        receivedFromNetwork.orderFloor);
+			case message_header_t.expediteOrder:
+			{
+				/* Remove from elevators lists */
+				removeFromList(
+					receivedFromNetwork.senderID,
+					receivedFromNetwork.orderFloor);
 
-                    /* Update operators orders */
-                    operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
+				/* Update operators orders */
+				operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
 
-                    /* Clear external lights */
-                    elev_set_button_lamp(
-                            elev_button_type_t.BUTTON_CALL_UP,
-                            receivedFromNetwork.orderFloor,
-                            0);
-                    elev_set_button_lamp(
-                            elev_button_type_t.BUTTON_CALL_DOWN,
-                            receivedFromNetwork.orderFloor,
-                            0);
+				/* Clear external lights */
+				elev_set_button_lamp(
+					elev_button_type_t.BUTTON_CALL_UP,
+					receivedFromNetwork.orderFloor,
+					0);
+				elev_set_button_lamp(
+					elev_button_type_t.BUTTON_CALL_DOWN,
+					receivedFromNetwork.orderFloor,
+					0);
 
-                    /* Clear internal light if we are the expeditor */
-                    if (receivedFromNetwork.senderID == getMyID())
-                    {
-                        elev_set_button_lamp(
-                            elev_button_type_t.BUTTON_COMMAND,
-                            receivedFromNetwork.orderFloor,
-                            0);
-                    }
-                    break;
-                }
+				/* Clear internal light if we are the expeditor */
+				if (receivedFromNetwork.senderID == getMyID())
+				{
+					elev_set_button_lamp(
+						elev_button_type_t.BUTTON_COMMAND,
+						receivedFromNetwork.orderFloor,
+						0);
+				}
+				break;
+			}
 
-                case message_header_t.syncRequest:
-                {
-                    if (getMyID() == highestID())
-                        // TODO: Can't we just have all of the elevators send it?
-                        sendSyncInfo(receivedFromNetwork.senderID);
-                    break;
-                }
+			case message_header_t.syncRequest:
+			{
+				if (getMyID() == highestID())
+					// TODO: Can't we just have all of the elevators send it?
+					sendSyncInfo(receivedFromNetwork.senderID);
+				break;
+			}
 
-                case message_header_t.syncInfo:
-                {
-                    if (getMyID() == receivedFromNetwork.targetID)
-                        syncMySet(receivedFromNetwork.syncInternalList);
-                    break;
-                }
+			case message_header_t.syncInfo:
+			{
+				if (getMyID() == receivedFromNetwork.targetID)
+					syncMySet(receivedFromNetwork.syncInternalList);
+				break;
+			}
 
-                case message_header_t.heartbeat:
-                {
-                    updateHeartbeat(receivedFromNetwork.senderID,
-                            receivedFromNetwork.currentState,
-                            receivedFromNetwork.currentFloor,
-                            receivedFromNetwork.timestamp);
-                    break;
-                }
-                default:
-                {
-                    break;
-                }
+			case message_header_t.heartbeat:
+			{
+				updateHeartbeat(receivedFromNetwork.senderID,
+						receivedFromNetwork.currentState,
+						receivedFromNetwork.currentFloor,
+						receivedFromNetwork.timestamp);
+				break;
+			}
+			default:
+			{
+				break;
+			}
 			}
 		}
 
-        
-        /* Update lists of alive and inactive elevators */
+		/* Update lists of alive and inactive elevators */
 		PeerList extractedPeerList = PeerList();
 		if (peerListChn.extract(extractedPeerList))
 		{
-            foreach(id; extractedPeerList)
-            {
-                if (id in inactiveElevators)
-                {
-                    reviveElevator(id);
-                }
-                else if (id !in aliveElevators)
-                {
-                    createElevator(id);
-                }
-            }
-            foreach(id; aliveElevators.byKey)
-            {
-                if (!canFind(extractedPeerList.peers, id))
-                {
-                    retireElevator(id);
-                }
-            }
-            debug writeln("keeper: alive ", aliveElevators.keys);
-            debug writeln("keeper: inactive ", inactiveElevators.keys);
-        }
+			foreach (id; extractedPeerList)
+			{
+				if (id in inactiveElevators)
+					reviveElevator(id);
+				else if (id !in aliveElevators)
+					createElevator(id);
+			}
+			foreach (id; aliveElevators.byKey)
+				if (!canFind(extractedPeerList.peers, id))
+					retireElevator(id);
+
+			debug writeln("keeper: alive ", aliveElevators.keys);
+			debug writeln("keeper: inactive ", inactiveElevators.keys);
+		}
 
 	}
 }

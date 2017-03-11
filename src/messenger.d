@@ -91,8 +91,8 @@ PeerList getPeerList()
 
 void updatePeerList(PeerList list)
 {
-    peerList = list;
-    debug writeln(" >> PeerList", getPeerList());
+	peerList = list;
+	debug writeln(" >> PeerList", getPeerList());
 }
 
 /*
@@ -106,13 +106,13 @@ void updatePeerList(PeerList list)
 void messengerThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
-    ref shared NonBlockingChannel!PeerList peerListChn,
+	ref shared NonBlockingChannel!PeerList peerListChn,
 	)
 {
 	debug writelnGreen("    [x] messengerThread");
 	Tid peerTx = peers.init;
 	_myID = peers.id;
-    debug writeln("messenger: myID is [", getMyID(), "]");
+	debug writeln("messenger: myID is [", getMyID(), "]");
 	Tid networkTid = udp_bcast.init!(message_t)(getMyID(), thisTid());
 
 	message_t receivedToNetworkOrder;
@@ -125,13 +125,9 @@ void messengerThread(
 			if ( (receivedToNetworkOrder.header == message_header_t.delegateOrder)
 			     && (receivedToNetworkOrder.targetID == getMyID())
 			     )
-            {
 				ordersToThisElevatorChn.insert(receivedToNetworkOrder);
-            }
 			else
-            {
 				networkTid.send(receivedToNetworkOrder);
-            }
 		}
 
 		/* Only the network thread uses receive */
@@ -142,13 +138,13 @@ void messengerThread(
 			debug writeln("messenger: received order from network");
 			debug writeln(" >> ", orderFromNetwork);
 			ordersToThisElevatorChn.insert(orderFromNetwork);
-			
+
 		},
 			(PeerList list)
 		{
 			debug writelnBlue("messenger: received PeerList from network");
-            updatePeerList(list);
-            peerListChn.insert(list);
+			updatePeerList(list);
+			peerListChn.insert(list);
 		},
 			(Variant v)
 		{

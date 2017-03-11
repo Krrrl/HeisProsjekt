@@ -26,15 +26,15 @@ void watchdogThread(
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
-    ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
+	ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
 	)
 {
 	debug writelnGreen("    [x] watchdogThread");
 
-    // Wait for other threads to initialize before starting the Night's Watch
-    Thread.sleep(msecs(20));
+	// Wait for other threads to initialize before starting the Night's Watch
+	Thread.sleep(msecs(20));
 
-    int heartBeats = 0;
+	int heartBeats = 0;
 
 	while (true)
 	{
