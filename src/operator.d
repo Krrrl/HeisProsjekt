@@ -29,7 +29,7 @@ enum state_t
 	IDLE
 }
 private shared int currentFloor = 0;
-private int previousValidFloor = 0;
+private int previousValidFloor = -1;
 private shared state_t currentState = state_t.INIT;
 private state_t previousDirection = state_t.INIT;
 
@@ -47,7 +47,7 @@ int getCurrentFloor()
 
 void updateOrdersForThisElevator(OrderList orders)
 {
-	debug writelnOrange("operator: updating my orders");
+	debug write("operator: my orders ...  ");
 	ordersForThisElevator[button_type_t.UP] = orders.upQueue.dup;
 	ordersForThisElevator[button_type_t.DOWN] = orders.downQueue.dup;
 	ordersForThisElevator[button_type_t.INTERNAL] = orders.internalQueue.dup;
@@ -86,7 +86,20 @@ bool shouldStopAtFloor(int floor)
 			}
 			if (ordersForThisElevator[button_type_t.DOWN].length)
 			{
-				if (sort(ordersForThisElevator[button_type_t.DOWN].dup)[$ - 1] == floor)
+                int highestDownOrder = sort(ordersForThisElevator[button_type_t.DOWN].dup)[$ - 1];
+                int[] nonDownOrders = ordersForThisElevator[button_type_t.UP].dup ~ ordersForThisElevator[button_type_t.INTERNAL].dup;
+
+                int highestNonDownOrder;
+                if (nonDownOrders.length)
+                {
+                    sort(nonDownOrders);
+                    highestNonDownOrder = nonDownOrders[$ - 1];
+                }
+                else
+                {
+                    highestNonDownOrder = 0;
+                }
+				if (highestDownOrder == floor && highestDownOrder > highestNonDownOrder)
 					return true;
 			}
 			return false;
@@ -106,9 +119,21 @@ bool shouldStopAtFloor(int floor)
 			}
 			if (ordersForThisElevator[button_type_t.UP].length)
 			{
-				if (sort(ordersForThisElevator[button_type_t.UP].dup)[0] == floor)
+                int lowestUpOrder = sort(ordersForThisElevator[button_type_t.UP].dup)[0];
+                int[] nonUpOrders = ordersForThisElevator[button_type_t.DOWN].dup ~ ordersForThisElevator[button_type_t.INTERNAL].dup;
+
+                int lowestNonUpOrder;
+                if (lowestNonUpOrder.length)
+                {
+                    sort(nonUpOrders);
+                    lowestNonUpOrder = nonUpOrders[0];
+                }
+                else
+                {
+                    lowestNonUpOrder = main.nrOfFloors;
+                }
+				if (lowestUpOrder == floor && lowestUpOrder <= lowestNonUpOrder)
 					return true;
-			}
 			return false;
 		}
 		case(state_t.FLOORSTOP):
@@ -150,11 +175,11 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 			{
 				 if (allOrders[0] < floor)
 				 {
-				 	return elev_motor_direction_t.DIRN_UP;
+				 	return elev_motor_direction_t.DIRN_DOWN;
 				 }
 				 if (allOrders[$ - 1] > floor)
 				 {
-				 	return elev_motor_direction_t.DIRN_DOWN;
+				 	return elev_motor_direction_t.DIRN_UP;
 				 }
 				 break;
 			}
@@ -206,7 +231,7 @@ void operatorThread(
 				// Wait for syncInfo?
 				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 				/* Go to idle */
-				debug writelnOrange("operator: IDLE");
+				debug writelnPurple("operator: IDLE");
 				currentState = state_t.IDLE;
 
 				break;
@@ -215,7 +240,7 @@ void operatorThread(
 			{
 				if (shouldStopAtFloor(currentFloor))
 				{
-					debug writelnOrange("operator: FLOORSTOP");
+					debug writelnPurple("operator: FLOORSTOP");
 					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					
@@ -228,7 +253,7 @@ void operatorThread(
 			{
 				if (shouldStopAtFloor(currentFloor))
 				{
-					debug writelnOrange("operator: FLOORSTOP");
+					debug writelnPurple("operator: FLOORSTOP");
 					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					previousDirection = state_t.GOING_DOWN;
@@ -243,7 +268,7 @@ void operatorThread(
 				// Start timer
 
 				// Timeout
-				debug writelnOrange("operator: IDLE");
+				debug writelnPurple("operator: IDLE");
 				currentState = state_t.IDLE;
 				break;
 			}
@@ -254,13 +279,13 @@ void operatorThread(
 				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
 				if (directionToNextOrder == elev_motor_direction_t.DIRN_UP)
 				{
-					debug writelnOrange("operator: GOING_UP");
+					debug writelnPurple("operator: GOING_UP");
 					elev_set_motor_direction(directionToNextOrder);
 					currentState = state_t.GOING_UP;
 				}
 				if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
 				{
-					debug writelnOrange("operator: GOING_DOWN");
+					debug writelnPurple("operator: GOING_DOWN");
 					elev_set_motor_direction(directionToNextOrder);
 					currentState = state_t.GOING_DOWN;
 				}

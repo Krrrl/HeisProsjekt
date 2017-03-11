@@ -31,7 +31,7 @@ void delegatorThread(
 {
 	debug writelnGreen("    [x] delegatorThread");
 	/* Construct prevState for all buttons */
-	bool[main.nrOfFloors][3] buttonPrevMatrix = false;
+	bool[main.nrOfFloors][main.nrOfButtons] buttonPrevMatrix = false;
 
 	while (true)
 	{
@@ -65,9 +65,6 @@ void delegatorThread(
         if (ordersToBeDelegatedChn.extract(newOrder))
         {
             createDelegateOrder(newOrder);
-            
-
-            //debug writeln(newOrder);
 
             toNetworkChn.insert(newOrder);
 

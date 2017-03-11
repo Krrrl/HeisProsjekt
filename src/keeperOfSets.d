@@ -144,38 +144,28 @@ void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 	}
 }
 
-void removeFromList(ubyte targetID, button_type_t orderDirection, int orderFloor)
+void removeFromList(ubyte targetID, int orderFloor)
 {
-	if (targetID in aliveElevators)
-	{
-		switch (orderDirection)
-		{
-		case button_type_t.DOWN:
-		{
-			if (orderFloor in aliveElevators[targetID].downQueue)
-				aliveElevators[targetID].downQueue.remove(orderFloor);
-			break;
-		}
-
-		case button_type_t.UP:
-		{
-			if (orderFloor in aliveElevators[targetID].upQueue)
-				aliveElevators[targetID].upQueue.remove(orderFloor);
-			break;
-		}
-
-		case button_type_t.INTERNAL:
-		{
-			if (orderFloor in aliveElevators[targetID].internalQueue)
-				aliveElevators[targetID].internalQueue.remove(orderFloor);
-			break;
-		}
-		default:
-		{
-			break;
-		}
-		}
-	}
+    /* Remove up and down orders at orderFloor for all elevators */
+    foreach(elevator; aliveElevators)
+    {
+        if (orderFloor in elevator.downQueue)
+        {
+            elevator.downQueue.remove(orderFloor);
+        }
+        if (orderFloor in elevator.upQueue)
+        {
+            elevator.upQueue.remove(orderFloor);
+        }
+    }
+    /* Remove internal order only from the specific elevator */
+    if (targetID in aliveElevators)
+    {
+        if (orderFloor in aliveElevators[targetID].internalQueue)
+        {
+            aliveElevators[targetID].internalQueue.remove(orderFloor);
+        }
+    }
 }
 
 OrderList getElevatorsOrders(ubyte id)
@@ -233,10 +223,7 @@ void keeperOfSetsThread(
 	ref shared NonBlockingChannel!PeerList peerListChn
 	)
 {
-	debug
-	{
-		writelnGreen("    [x] keeperOfSetsThread");
-	}
+	debug writelnGreen("    [x] keeperOfSetsThread");
 
 	message_t receivedFromNetwork;
 
@@ -244,109 +231,112 @@ void keeperOfSetsThread(
 	{
 		if (ordersToThisElevatorChn.extract(receivedFromNetwork))
 		{
-			debug writeln("keeperOfSets: from toElevChn: ");
-			debug writeln(receivedFromNetwork);
-
 			switch (receivedFromNetwork.header)
-			{
-			case message_header_t.delegateOrder:
-			{
-				if (receivedFromNetwork.targetID == getMyID())
-				{
-					/* Confirm order */
-			        message_t confirmingOrder;
-			        confirmingOrder.header = message_header_t.confirmOrder;
-		            confirmingOrder.senderID = messenger.getMyID();
-		            // TODO: [REMOVE THIS COMMENT ?] Setting targetID to the delegators sender ID, so that the delegator knows that it was its order we now confirm
-		            confirmingOrder.targetID = receivedFromNetwork.senderID;
-		            confirmingOrder.orderFloor = receivedFromNetwork.orderFloor;
-		            confirmingOrder.orderDirection = receivedFromNetwork.orderDirection;
-		            confirmingOrder.currentState = getCurrentState();
-		            confirmingOrder.currentFloor = getCurrentFloor();
-		            confirmingOrder.timestamp = Clock.currTime().stdTime;
-			        toNetworkChn.insert(confirmingOrder);
+                {
+                case message_header_t.delegateOrder:
+                {
+                    if (receivedFromNetwork.targetID == getMyID())
+                    {
+                        /* Confirm order */
+                        message_t confirmingOrder;
+                        confirmingOrder.header = message_header_t.confirmOrder;
+                        confirmingOrder.senderID = messenger.getMyID();
+                        // TODO: [REMOVE THIS COMMENT ?] Setting targetID to the delegators sender ID, so that the delegator knows that it was its order we now confirm
+                        confirmingOrder.targetID = receivedFromNetwork.senderID;
+                        confirmingOrder.orderFloor = receivedFromNetwork.orderFloor;
+                        confirmingOrder.orderDirection = receivedFromNetwork.orderDirection;
+                        confirmingOrder.currentState = getCurrentState();
+                        confirmingOrder.currentFloor = getCurrentFloor();
+                        confirmingOrder.timestamp = Clock.currTime().stdTime;
+                        toNetworkChn.insert(confirmingOrder);
 
-				}
-				break;
-			}
+                    }
+                    break;
+                }
 
-			case message_header_t.confirmOrder:
-			{
-				/* Add to senders lists */
-				addToList(
-					receivedFromNetwork.senderID,
-					receivedFromNetwork.orderDirection,
-					receivedFromNetwork.orderFloor);
+                case message_header_t.confirmOrder:
+                {
+                    /* Add to senders lists */
+                    addToList(
+                        receivedFromNetwork.senderID,
+                        receivedFromNetwork.orderDirection,
+                        receivedFromNetwork.orderFloor);
 
-				/* Update operators orders if it is ours */
-				if (receivedFromNetwork.senderID == getMyID())
-				{
-					operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
-				}
+                    /* Update operators orders if the new order is ours */
+                    if (receivedFromNetwork.senderID == getMyID())
+                    {
+                        operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
+                    }
 
-				/* Set light if order is local-internal or external */
-				if (receivedFromNetwork.targetID == getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
-				{
-					elev_set_button_lamp(
-						cast(elev_button_type_t)receivedFromNetwork.orderDirection,
-						receivedFromNetwork.orderFloor,
-						1);
-				}
-				break;
-			}
+                    /* Set light if order is local-internal or external */
+                    if (receivedFromNetwork.targetID == getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
+                    {
+                        elev_set_button_lamp(
+                            cast(elev_button_type_t)receivedFromNetwork.orderDirection,
+                            receivedFromNetwork.orderFloor,
+                            1);
+                    }
+                    break;
+                }
 
-			case message_header_t.expediteOrder:
-			{
-				/* Remove from senders lists */
-				removeFromList(
-					receivedFromNetwork.senderID,
-					receivedFromNetwork.orderDirection,
-					receivedFromNetwork.orderFloor);
+                case message_header_t.expediteOrder:
+                {
+                    /* Remove from elevators lists */
+                    removeFromList(
+                        receivedFromNetwork.senderID,
+                        receivedFromNetwork.orderFloor);
 
-				/* Update operators orders */
-				if (receivedFromNetwork.senderID == getMyID())
-				{
-					operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
-				}
+                    /* Update operators orders */
+                    operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
 
-				/* Clear light if local internal or external */
-				if (receivedFromNetwork.targetID == getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
-				{
-					elev_set_button_lamp(
-						cast(elev_button_type_t)receivedFromNetwork.orderDirection,
-						receivedFromNetwork.orderFloor,
-						0);
-				}
-				break;
-			}
+                    /* Clear external lights */
+                    elev_set_button_lamp(
+                            elev_button_type_t.BUTTON_CALL_UP,
+                            receivedFromNetwork.orderFloor,
+                            0);
+                    elev_set_button_lamp(
+                            elev_button_type_t.BUTTON_CALL_DOWN,
+                            receivedFromNetwork.orderFloor,
+                            0);
 
-			case message_header_t.syncRequest:
-			{
-				if (getMyID() == highestID())
-					// TODO: Can't we just have all of the elevators send it?
-					sendSyncInfo(receivedFromNetwork.senderID);
-				break;
-			}
+                    /* Clear internal light if we are the expeditor */
+                    if (receivedFromNetwork.senderID == getMyID())
+                    {
+                        elev_set_button_lamp(
+                            elev_button_type_t.BUTTON_COMMAND,
+                            receivedFromNetwork.orderFloor,
+                            0);
+                    }
+                    break;
+                }
 
-			case message_header_t.syncInfo:
-			{
-				if (getMyID() == receivedFromNetwork.targetID)
-					syncMySet(receivedFromNetwork.syncInternalList);
-				break;
-			}
+                case message_header_t.syncRequest:
+                {
+                    if (getMyID() == highestID())
+                        // TODO: Can't we just have all of the elevators send it?
+                        sendSyncInfo(receivedFromNetwork.senderID);
+                    break;
+                }
 
-			case message_header_t.heartbeat:
-			{
-				updateHeartbeat(receivedFromNetwork.senderID,
-						receivedFromNetwork.currentState,
-						receivedFromNetwork.currentFloor,
-						receivedFromNetwork.timestamp);
-				break;
-			}
-			default:
-			{
-				break;
-			}
+                case message_header_t.syncInfo:
+                {
+                    if (getMyID() == receivedFromNetwork.targetID)
+                        syncMySet(receivedFromNetwork.syncInternalList);
+                    break;
+                }
+
+                case message_header_t.heartbeat:
+                {
+                    updateHeartbeat(receivedFromNetwork.senderID,
+                            receivedFromNetwork.currentState,
+                            receivedFromNetwork.currentFloor,
+                            receivedFromNetwork.timestamp);
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
 			}
 		}
 

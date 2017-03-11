@@ -92,7 +92,7 @@ PeerList getPeerList()
 void updatePeerList(PeerList list)
 {
     peerList = list;
-    writeln(" >> PeerList", getPeerList());
+    debug writeln(" >> PeerList", getPeerList());
 }
 
 /*
@@ -126,12 +126,10 @@ void messengerThread(
 			     && (receivedToNetworkOrder.targetID == getMyID())
 			     )
             {
-                debug writeln("messenger: passing delegate to keeper");
 				ordersToThisElevatorChn.insert(receivedToNetworkOrder);
             }
 			else
             {
-                debug writeln("messenger: passing order to network");
 				networkTid.send(receivedToNetworkOrder);
             }
 		}
@@ -141,21 +139,21 @@ void messengerThread(
 			msecs(1),
 			(message_t orderFromNetwork)
 		{
-			writeln("messenger: received order from network");
-			writeln(" >> ", orderFromNetwork);
+			debug writeln("messenger: received order from network");
+			debug writeln(" >> ", orderFromNetwork);
 			ordersToThisElevatorChn.insert(orderFromNetwork);
 			
 		},
 			(PeerList list)
 		{
-			writelnBlue("messenger: received PeerList from network");
+			debug writelnBlue("messenger: received PeerList from network");
             updatePeerList(list);
             peerListChn.insert(list);
 		},
 			(Variant v)
 		{
-			writelnYellow("messenger: received Variant from network");
-			writeln(">>> ", v);
+			debug writelnYellow("messenger: received Variant from network");
+			debug writeln(">>> ", v);
 		}
 			);
 	}
