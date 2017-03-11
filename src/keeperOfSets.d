@@ -117,14 +117,12 @@ void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 			aliveElevators[targetID].downQueue[orderFloor] = true;
 		break;
 	}
-
 	case button_type_t.UP:
 	{
 		if (orderFloor !in aliveElevators[targetID].upQueue)
 			aliveElevators[targetID].upQueue[orderFloor] = true;
 		break;
 	}
-
 	case button_type_t.INTERNAL:
 	{
 		if (orderFloor !in aliveElevators[targetID].internalQueue)
@@ -152,7 +150,6 @@ void removeFromList(ubyte targetID, int orderFloor)
 	if (targetID in aliveElevators)
 		if (orderFloor in aliveElevators[targetID].internalQueue)
 			aliveElevators[targetID].internalQueue.remove(orderFloor);
-
 }
 
 orderList_t getElevatorsOrders(ubyte id)
@@ -180,28 +177,60 @@ void updateHeartbeat(ubyte targetID, state_t currentState, int currentFloor, lon
 	aliveElevators[targetID].lastTimestamp  = timestamp;
 }
 
-void sendSyncInfo(ubyte targetID)
+message_t createSyncInfo(ubyte targetID)
 {
-	orderList_t orders = orderList_t(
-		aliveElevators[targetID].internalQueue.keys);
-	
 	message_t newSyncMessage;
-	newSyncMessage.header 	= message_header_t.syncInfo;
-	newSyncMessage.senderID = getMyID();
 
-	toNetworkChn.insert(newSyncMessage);
+	newSyncMessage.header   = message_header_t.syncInfo;
+	newSyncMessage.senderID = getMyID();
+	newSyncMessage.targetID = targetID;
+
+	int[main.nrOfFloors] internalOrders;
+	debug writeln("internalOrders So far: ", internalOrders);
+	if (targetID in deadElevators)
+    {
+		debug writelnRed("syncer was in dead");
+	    reviveElevator(targetID);
+    }
+	if (targetID !in aliveElevators)
+    {
+		debug writelnRed("syncer wasn't in dead");
+	    createElevator(targetID);
+    }
+	debug writelnPurple("i don't know anymore");
+	debug writeln(aliveElevators[targetID].internalQueue.keys);
+	foreach (floor; aliveElevators[targetID].internalQueue.keys)
+    {
+		debug writeln("setting floor ", floor);
+		internalOrders[floor] = 1;
+    }
+	newSyncMessage.syncInfo = internalOrders.dup;
+
+	return newSyncMessage;
 }
 
-void syncMySet(orderList_t internalOrders)
+void syncMySet(shared int[main.nrOfFloors] internalOrders)
 {
-	aliveElevators[getMyID()].internalQueue = internalOrders;
+	debug writeln("keeper: syncing my sets with ", internalOrders);
+	if (messenger.getMyID() in deadElevators)
+		reviveElevator(messenger.getMyID());
+	else if (messenger.getMyID() !in aliveElevators)
+		createElevator(messenger.getMyID());
+	foreach (int floor, order; internalOrders)
+	{
+		if (order)
+		{
+			addToList(messenger.getMyID(), button_type_t.INTERNAL, floor);
+			elev_set_button_lamp(elev_button_type_t.BUTTON_COMMAND, floor, 1);
+		}
+	}
 }
 
 ubyte highestID()
 {
 	ubyte highestID = messenger.getMyID();
 
-	foreach (elevator; aliveElevators.byValue)
+	foreach (elevator; aliveElevators)
 	{
 		if (messenger.getMyID() < elevator.ID)
 			highestID = elevator.ID;
@@ -304,15 +333,23 @@ void keeperOfSetsThread(
 
 			case message_header_t.syncRequest:
 			{
+				debug writeln("keeper: received sync request");
 				if (messenger.getMyID() == highestID())
-					sendSyncInfo(receivedFromNetwork.senderID);
+				{
+					message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
+					debug writeln("keeper: sync message crote");
+					toNetworkChn.insert(syncInfo);
+				}
 				break;
 			}
 
 			case message_header_t.syncInfo:
 			{
 				if (messenger.getMyID() == receivedFromNetwork.targetID)
+				{
 					syncMySet(receivedFromNetwork.syncInfo);
+					operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+				}
 				break;
 			}
 

@@ -71,7 +71,7 @@ struct message_t
 	state_t currentState;
 	int currentFloor;
 	long timestamp;
-	orderList_t syncInfo;
+	shared int[main.nrOfFloors] syncInfo;
 }
 
 private shared ubyte _myID = 0;
@@ -94,6 +94,19 @@ void updatePeerList(PeerList list)
 	debug writeln(" >> PeerList", getPeerList());
 }
 
+message_t createSyncRequest()
+{
+	message_t newSyncMessage;
+
+	newSyncMessage.header   = message_header_t.syncRequest;
+	newSyncMessage.senderID = getMyID();
+    newSyncMessage.currentState = getCurrentState();
+    newSyncMessage.currentFloor = getPreviousValidFloor();
+    newSyncMessage.timestamp = Clock.currTime().toUnixTime();
+
+	return newSyncMessage;
+}
+
 /*
  * @brief   Thread responsible for passing messages between network module and remaining modules
  * @details xxx
@@ -113,6 +126,9 @@ void messengerThread(
 	_myID = peers.id;
 	debug writeln("messenger: myID is [", getMyID(), "]");
 	Tid networkTid = udp_bcast.init!(message_t)(getMyID(), thisTid());
+
+    debug writeln("messenger: sending sync request");
+    toNetworkChn.insert(createSyncRequest());
 
 	message_t receivedToNetworkOrder;
 	message_t receivedToElevatorOrder;

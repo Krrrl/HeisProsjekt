@@ -35,7 +35,8 @@ void main(string[] args)
 	/* channel for passing peer list to Keeper */
 	shared NonBlockingChannel!PeerList peerListChn = new NonBlockingChannel!PeerList;
 	/* channel for updating the operator on this elevators current orders*/
-	shared NonBlockingChannel!OrderList operatorsOrdersChn = new NonBlockingChannel!OrderList;
+	shared NonBlockingChannel!orderList_t operatorsOrdersChn = new
+        NonBlockingChannel!orderList_t;
 
 	debug writeln("Initializing lift hardware ...");
 	elev_type ioInterface = elev_type.ET_Comedi;
