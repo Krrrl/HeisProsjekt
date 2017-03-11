@@ -71,6 +71,16 @@ message_t createExpediteOrder(int floor)
 
 bool shouldStopAtFloor(int floor)
 {
+	int[] allOrders = ordersForThisElevator[button_type_t.UP] ~
+			  ordersForThisElevator[button_type_t.DOWN] ~
+			  ordersForThisElevator[button_type_t.INTERNAL];
+
+    /* Stop the elevator if there are no orders */
+    if (!cast(bool)allOrders.length)
+    {
+        return true;
+    }
+
 	switch (currentState)
 	{
 	case (state_t.GOING_UP):
@@ -226,6 +236,16 @@ void operatorThread(
 				previousDirection       = state_t.GOING_UP;
 				currentState            = state_t.FLOORSTOP;
 			}
+
+            /* Check if we are going to correct way */
+            elev_motor_direction_t correctDirection =
+                getDirectionToNextOrder(previousValidFloor);
+            if (correctDirection != elev_motor_direction_t.DIRN_UP)
+            {
+                debug writelnPurple("operator: IDLE");
+                elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                currentState = state_t.FLOORSTOP;
+            }
 			break;
 		}
 		case (state_t.GOING_DOWN):
@@ -238,6 +258,16 @@ void operatorThread(
 				previousDirection       = state_t.GOING_DOWN;
 				currentState            = state_t.FLOORSTOP;
 			}
+
+            /* Check if we are going to correct way */
+            elev_motor_direction_t correctDirection =
+                getDirectionToNextOrder(previousValidFloor);
+            if (correctDirection != elev_motor_direction_t.DIRN_DOWN)
+            {
+                debug writelnPurple("operator: IDLE");
+                elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                currentState = state_t.FLOORSTOP;
+            }
 			break;
 		}
 		case (state_t.FLOORSTOP):
