@@ -25,7 +25,7 @@ public:
 	ubyte ID;
 }
 
-struct OrderList
+struct orderList_t
 {
 	immutable(int)[] upQueue;
 	immutable(int)[] downQueue;
@@ -33,12 +33,12 @@ struct OrderList
 }
 
 shared elevator_t[ubyte] aliveElevators;
-shared elevator_t[ubyte] inactiveElevators;
+shared elevator_t[ubyte] deadElevators;
 
 void reviveElevator(ubyte id)
 {
-	aliveElevators[id] = inactiveElevators[id];
-	inactiveElevators.remove(id);
+	aliveElevators[id] = deadElevators[id];
+	deadElevators.remove(id);
 	debug writeln("keeper: elevator [", id, "] REVIVED");
 }
 
@@ -50,7 +50,7 @@ void createElevator(ubyte id)
 
 void retireElevator(ubyte id)
 {
-	inactiveElevators[id] = aliveElevators[id];
+	deadElevators[id] = aliveElevators[id];
 	aliveElevators.remove(id);
 	debug writeln("keeper: elevator [", id, "] RETIRED");
 }
@@ -58,7 +58,7 @@ void retireElevator(ubyte id)
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
 	if (orderDirection == button_type_t.INTERNAL)
-		return getMyID();
+		return messenger.getMyID();
 
 	elevator_t[ubyte] candidates    = (cast(elevator_t[ubyte])aliveElevators).dup;
 	elevator_t[ubyte] entrants      = candidates.dup;
@@ -101,7 +101,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 {
 	// TODO: check that targetID is in aliveElevators?
-	if (targetID in inactiveElevators)
+	if (targetID in deadElevators)
 	{
 		// Do what? Error handling?
 		debug writelnYellow("keeper: tried to add to inactive's list");
@@ -155,13 +155,13 @@ void removeFromList(ubyte targetID, int orderFloor)
 
 }
 
-OrderList getElevatorsOrders(ubyte id)
+orderList_t getElevatorsOrders(ubyte id)
 {
-	OrderList orders;
+	orderList_t orders;
 
 	if (id in aliveElevators)
 	{
-		orders = OrderList(
+		orders = orderList_t(
 			aliveElevators[id].upQueue.keys,
 			aliveElevators[id].downQueue.keys,
 			aliveElevators[id].internalQueue.keys);
@@ -182,21 +182,28 @@ void updateHeartbeat(ubyte targetID, state_t currentState, int currentFloor, lon
 
 void sendSyncInfo(ubyte targetID)
 {
+	orderList_t orders = orderList_t(
+		aliveElevators[targetID].internalQueue.keys);
+	
+	message_t newSyncMessage;
+	newSyncMessage.header 	= message_header_t.syncInfo;
+	newSyncMessage.senderID = getMyID();
 
+	toNetworkChn.insert(newSyncMessage);
 }
 
-void syncMySet(shared bool[int] internalSet)
+void syncMySet(orderList_t internalOrders)
 {
-
+	aliveElevators[getMyID()].internalQueue = internalOrders;
 }
 
 ubyte highestID()
 {
-	ubyte highestID = getMyID();
+	ubyte highestID = messenger.getMyID();
 
 	foreach (elevator; aliveElevators.byValue)
 	{
-		if (getMyID() < elevator.ID)
+		if (messenger.getMyID() < elevator.ID)
 			highestID = elevator.ID;
 
 	}
@@ -207,7 +214,7 @@ void keeperOfSetsThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
-	ref shared NonBlockingChannel!OrderList operatorsOrdersChn,
+	ref shared NonBlockingChannel!orderList_t operatorsOrdersChn,
 	ref shared NonBlockingChannel!PeerList peerListChn
 	)
 {
@@ -223,7 +230,7 @@ void keeperOfSetsThread(
 			{
 			case message_header_t.delegateOrder:
 			{
-				if (receivedFromNetwork.targetID == getMyID())
+				if (receivedFromNetwork.targetID == messenger.getMyID())
 				{
 					/* Confirm order */
 					message_t confirmingOrder;
@@ -251,11 +258,11 @@ void keeperOfSetsThread(
 					receivedFromNetwork.orderFloor);
 
 				/* Update operators orders if the new order is ours */
-				if (receivedFromNetwork.senderID == getMyID())
-					operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
+				if (receivedFromNetwork.senderID == messenger.getMyID())
+					operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
 
 				/* Set light if order is local-internal or external */
-				if (receivedFromNetwork.targetID == getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
+				if (receivedFromNetwork.targetID == messenger.getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
 				{
 					elev_set_button_lamp(
 						cast(elev_button_type_t)receivedFromNetwork.orderDirection,
@@ -273,7 +280,7 @@ void keeperOfSetsThread(
 					receivedFromNetwork.orderFloor);
 
 				/* Update operators orders */
-				operatorsOrdersChn.insert(getElevatorsOrders(getMyID()));
+				operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
 
 				/* Clear external lights */
 				elev_set_button_lamp(
@@ -286,7 +293,7 @@ void keeperOfSetsThread(
 					0);
 
 				/* Clear internal light if we are the expeditor */
-				if (receivedFromNetwork.senderID == getMyID())
+				if (receivedFromNetwork.senderID == messenger.getMyID())
 				{
 					elev_set_button_lamp(
 						elev_button_type_t.BUTTON_COMMAND,
@@ -298,16 +305,15 @@ void keeperOfSetsThread(
 
 			case message_header_t.syncRequest:
 			{
-				if (getMyID() == highestID())
-					// TODO: Can't we just have all of the elevators send it?
+				if (messenger.getMyID() == highestID())
 					sendSyncInfo(receivedFromNetwork.senderID);
 				break;
 			}
 
 			case message_header_t.syncInfo:
 			{
-				if (getMyID() == receivedFromNetwork.targetID)
-					syncMySet(receivedFromNetwork.syncInternalList);
+				if (messenger.getMyID() == receivedFromNetwork.targetID)
+					syncMySet(receivedFromNetwork.syncInfo);
 				break;
 			}
 
@@ -332,7 +338,7 @@ void keeperOfSetsThread(
 		{
 			foreach (id; extractedPeerList)
 			{
-				if (id in inactiveElevators)
+				if (id in deadElevators)
 					reviveElevator(id);
 				else if (id !in aliveElevators)
 					createElevator(id);
@@ -342,7 +348,7 @@ void keeperOfSetsThread(
 					retireElevator(id);
 
 			debug writeln("keeper: alive ", aliveElevators.keys);
-			debug writeln("keeper: inactive ", inactiveElevators.keys);
+			debug writeln("keeper: inactive ", deadElevators.keys);
 		}
 
 	}
