@@ -13,8 +13,8 @@ void createDelegateOrder(ref message_t newOrder)
 {
 	newOrder.senderID       = messenger.getMyID();
 	newOrder.currentState   = getCurrentState();
-	newOrder.currentFloor   = getCurrentFloor();
-	newOrder.timestamp      = Clock.currTime().stdTime;
+	newOrder.currentFloor   = getPreviousValidFloor();
+	newOrder.timestamp      = Clock.currTime().toUnixTime();
 	newOrder.targetID       = findMatch(newOrder.orderFloor, newOrder.orderDirection);
 }
 /*

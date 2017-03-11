@@ -29,10 +29,13 @@ enum state_t
 	IDLE
 }
 
-private shared int currentFloor         = 0;
-private int previousValidFloor          = -1;
+const int stopDuration                  = 3;
+
+private int currentFloor                = 0;
+private shared int previousValidFloor   = -1;
 private shared state_t currentState     = state_t.INIT;
 private state_t previousDirection       = state_t.INIT;
+private long timeAtFloorStop            = 0;
 
 private int[][button_type_t] ordersForThisElevator;
 
@@ -41,9 +44,18 @@ state_t getCurrentState()
 	return currentState;
 }
 
-int getCurrentFloor()
+void stopAtFloor()
 {
-	return currentFloor;
+	debug writelnPurple("operator: FLOORSTOP");
+	elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+	elev_set_door_open_lamp(1);
+	timeAtFloorStop = Clock.currTime.toUnixTime();
+	currentState    = state_t.FLOORSTOP;
+}
+
+int getPreviousValidFloor()
+{
+	return previousValidFloor;
 }
 
 void updateOrdersForThisElevator(OrderList orders)
@@ -63,8 +75,8 @@ message_t createExpediteOrder(int floor)
 	newExpediteOrder.senderID       = getMyID();
 	newExpediteOrder.orderFloor     = floor;
 	newExpediteOrder.currentState   = currentState;
-	newExpediteOrder.currentFloor   = currentFloor;
-	newExpediteOrder.timestamp      = Clock.currTime().stdTime;
+	newExpediteOrder.currentFloor   = previousValidFloor;
+	newExpediteOrder.timestamp      = Clock.currTime().toUnixTime();
 
 	return newExpediteOrder;
 }
@@ -75,11 +87,9 @@ bool shouldStopAtFloor(int floor)
 			  ordersForThisElevator[button_type_t.DOWN] ~
 			  ordersForThisElevator[button_type_t.INTERNAL];
 
-    /* Stop the elevator if there are no orders */
-    if (!cast(bool)allOrders.length)
-    {
-        return true;
-    }
+	/* Stop the elevator if there are no orders */
+	if (!cast(bool)allOrders.length)
+		return true;
 
 	switch (currentState)
 	{
@@ -218,6 +228,7 @@ void operatorThread(
 		{
 			// Find a floor, go up/down?
 			// Wait for syncInfo?
+
 			elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 			/* Go to idle */
 			debug writelnPurple("operator: IDLE");
@@ -229,59 +240,59 @@ void operatorThread(
 		{
 			if (shouldStopAtFloor(currentFloor))
 			{
-				debug writelnPurple("operator: FLOORSTOP");
-				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+				stopAtFloor();
 				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-
-				previousDirection       = state_t.GOING_UP;
-				currentState            = state_t.FLOORSTOP;
+				previousDirection = state_t.GOING_UP;
 			}
 
-            /* Check if we are going to correct way */
-            elev_motor_direction_t correctDirection =
-                getDirectionToNextOrder(previousValidFloor);
-            if (correctDirection != elev_motor_direction_t.DIRN_UP)
-            {
-                debug writelnPurple("operator: IDLE");
-                elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-                currentState = state_t.FLOORSTOP;
-            }
+			elev_motor_direction_t correctDirection =
+				getDirectionToNextOrder(previousValidFloor);
+			if (correctDirection != elev_motor_direction_t.DIRN_UP)
+			{
+				debug writelnRed("operator: was going the wrong way");
+				debug writelnPurple("operator: IDLE");
+				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+				currentState = state_t.IDLE;
+			}
 			break;
 		}
 		case (state_t.GOING_DOWN):
 		{
 			if (shouldStopAtFloor(currentFloor))
 			{
-				debug writelnPurple("operator: FLOORSTOP");
-				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+				stopAtFloor();
 				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-				previousDirection       = state_t.GOING_DOWN;
-				currentState            = state_t.FLOORSTOP;
+				previousDirection = state_t.GOING_DOWN;
 			}
 
-            /* Check if we are going to correct way */
-            elev_motor_direction_t correctDirection =
-                getDirectionToNextOrder(previousValidFloor);
-            if (correctDirection != elev_motor_direction_t.DIRN_DOWN)
-            {
-                debug writelnPurple("operator: IDLE");
-                elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-                currentState = state_t.FLOORSTOP;
-            }
+			elev_motor_direction_t correctDirection =
+				getDirectionToNextOrder(previousValidFloor);
+			if (correctDirection != elev_motor_direction_t.DIRN_DOWN)
+			{
+				debug writelnRed("operator: was going the wrong way");
+				debug writelnPurple("operator: IDLE");
+				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+				currentState = state_t.IDLE;
+			}
 			break;
 		}
 		case (state_t.FLOORSTOP):
 		{
+            /* Check for new orders */
+            if(shouldStopAtFloor(previousValidFloor))
+            {
+                toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+	            timeAtFloorStop = Clock.currTime.toUnixTime();
+            }
 
-			// Open door & Set doorlight
-			// Start timer
-
-			// Timeout
-			debug writelnPurple("operator: IDLE");
-			currentState = state_t.IDLE;
+			if (Clock.currTime.toUnixTime() > (timeAtFloorStop + stopDuration))
+			{
+				elev_set_door_open_lamp(0);
+				debug writelnPurple("operator: IDLE");
+				currentState = state_t.IDLE;
+			}
 			break;
 		}
-
 		case (state_t.IDLE):
 		{
 			/* Check for new orders */

@@ -234,8 +234,8 @@ void keeperOfSetsThread(
 					confirmingOrder.orderFloor      = receivedFromNetwork.orderFloor;
 					confirmingOrder.orderDirection  = receivedFromNetwork.orderDirection;
 					confirmingOrder.currentState    = getCurrentState();
-					confirmingOrder.currentFloor    = getCurrentFloor();
-					confirmingOrder.timestamp       = Clock.currTime().stdTime;
+					confirmingOrder.currentFloor    = getPreviousValidFloor();
+					confirmingOrder.timestamp       = Clock.currTime().toUnixTime();
 					toNetworkChn.insert(confirmingOrder);
 
 				}
