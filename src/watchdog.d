@@ -100,7 +100,7 @@ void watchdogThread(
 		//clearing old confirms against recent expedites
 		foreach(elevator; latestConfirm)//assuming latestConfirm and latestExpedite is of same length
 		{
-			foreach(floor; main.nrOfFloors)
+			foreach(floor; latestConfirm.orders)
 			if(latestExpedite[elevator].orders[floor] && latestConfirm.orders[floor])
 			{
 				//check if there has been an expedite on a floor after the confirm for that floor
@@ -116,7 +116,7 @@ void watchdogThread(
 		//checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any.
 		foreach(elevator; latestConfirm)//again assuming latestConfirm and latestExpedite is of same length.
 		{
-			foreach(floor; main.nrOfFloors)
+			foreach(floor; main.latestConfirm.orders)
 			{
 				//check if there is a confirmed order on this floor, and if it has passed the confirmedTimeoutThreshold without a repleneshing action in between
 				if(latestConfirm[elevator].orders[floor])
