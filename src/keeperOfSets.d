@@ -75,10 +75,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 	{
 		foreach(ubyte id, elevator; candidates)
 		{
-			if((elevator.currentFloor > orderFloor) 
-				&& ((elevator.currentState == state_t.GOING_DOWN) 
-					|| (elevator.prevState == state_t.GOING_DOWN)))
-
+			if(((elevator.currentFloor > orderFloor) && (elevator.currentState == state_t.GOING_DOWN)) 
+				|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_DOWN))
 			{
 				entrants[id] = candidates[id];
 			}
@@ -171,9 +169,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				debug writeln("there was no one going-down eligable, choosing a sub-optimal GOING DOWN instead");
 				foreach(ubyte id, elevator; candidates)
 				{
-					if((elevator.currentFloor <= orderFloor) 
-						&& ((elevator.currentState == state_t.GOING_DOWN) 
-						|| (elevator.prevState == state_t.GOING_DOWN)))
+					if(((elevator.currentFloor <= orderFloor) && (elevator.currentState == state_t.GOING_DOWN)))
 					{
 						entrants[id] = candidates[id];
 					}
@@ -206,10 +202,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 	{
 		foreach(ubyte id, elevator; candidates)
 		{
-			if((elevator.currentFloor < orderFloor) 
-				&& ((elevator.currentState == state_t.GOING_UP) 
-					|| (elevator.prevState == state_t.GOING_UP)))
-
+			if(((elevator.currentFloor < orderFloor) && (elevator.currentState == state_t.GOING_UP)) 
+				|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_UP))
 			{
 				entrants[id] = candidates[id];
 			}
@@ -300,9 +294,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				debug writeln("there was no one going-down eligable, choosing a sub-optimal GOING UP instead");
 				foreach(ubyte id, elevator; candidates)
 				{
-					if((elevator.currentFloor >= orderFloor) 
-						&& ((elevator.currentState == state_t.GOING_UP) 
-						|| (elevator.prevState == state_t.GOING_UP)))
+					if(((elevator.currentFloor >= orderFloor) && (elevator.currentState == state_t.GOING_UP)))
 					{
 						entrants[id] = candidates[id];
 					}
