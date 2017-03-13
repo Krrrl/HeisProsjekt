@@ -13,3 +13,9 @@ tags
 
 # C object files
 *.o
+
+# targets
+sim_server
+best_elevator
+net.con
+simulator.con
