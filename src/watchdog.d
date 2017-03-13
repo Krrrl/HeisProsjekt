@@ -25,10 +25,10 @@ struct watchdogTAG
 	long[int] timestamps;
 }
 
-private watchdogTAG[ubyte] latestConfirm;
-private long[ubyte] mostRecentConfirm;
-private watchdogTAG[ubyte] latestExpedite;
-private long[ubyte] mostRecentExpedite;
+private watchdogTAG[ubyte] latestConfirms;
+private long[ubyte] mostRecentConfirmTime;
+private watchdogTAG[ubyte] latestExpedites;
+private long[ubyte] mostRecentExpediteTime;
 
 //longest do-nothing interval allowed.
 private long confirmedTimeoutThreshold = 4;
@@ -57,72 +57,81 @@ void watchdogThread(
 
 	while (true)
 	{
-		//debug writeln("watchdog: [self] heartbeat ", heartBeats++);
-
-		//keeping lists up-to-date
+		/* Keeping timestamp lists up-to-date */
 		if(watchdogFeedChn.extract(receivedFromKeeper))
 		{
 			switch(receivedFromKeeper.header)
 			{
+                ubyte senderID = receivedFromKeeper.senderID;
+                int orderFloor = receivedFromKeeper.orderFloor;
+                long timestamp = receivedFromKeeper.timestamp;
+
 				case message_header_t.confirmOrder:
 				{
-					watchdogTAG confirmed;
-					confirmed.orders[receivedFromKeeper.orderFloor] = true;
-					confirmed.timestamps[receivedFromKeeper.orderFloor] = receivedFromKeeper.timestamp;
-					latestConfirm[receivedFromKeeper.senderID] = confirmed;
-					debug writeln("Woof, CONFIRM received from: ", receivedFromKeeper.senderID, "at time: ", receivedFromKeeper.timestamp);
-					mostRecentConfirm[receivedFromKeeper.senderID] = receivedFromKeeper.timestamp;
+                    if (senderID !in latestConfirms)
+                    {
+                        latestConfirms[senderID] = watchdogTAG();
+                    }
+
+					latestConfirms[senderID].orders[orderFloor] = true;
+                    latestConfirms[senderID].timestamps[orderFloor] = timestamp;
+					debug writeln("Woof: CONFIRM received from: ", senderID, "at time: ", timestamp);
+					mostRecentConfirmTime[senderID] = timestamp;
 					break;
 				}
 
 				case message_header_t.expediteOrder:
 				{
-					watchdogTAG expedited;
-					expedited.orders[receivedFromKeeper.orderFloor] = true;
-					expedited.timestamps[receivedFromKeeper.orderFloor] = receivedFromKeeper.timestamp;
-					latestExpedite[receivedFromKeeper.senderID] = expedited;
-					debug writeln("Woof, EXPEDITE received from: ", receivedFromKeeper.senderID, "at time: ", receivedFromKeeper.timestamp);
-					mostRecentExpedite[receivedFromKeeper.senderID] = receivedFromKeeper.timestamp;
+                    if (senderID !in latestExpedites)
+                    {
+                        latestExpedites[senderID] = watchdogTAG();
+                    }
+                    latestExpedites[senderID].orders[orderFloor] = true;
+                    latestExpedites[senderID].timestamps[orderFloor] = timestamp;
+					debug writeln("Woof: EXPEDITE received from: ", senderID, "at time: ", timestamp);
+					mostRecentExpediteTime[senderID] = timestamp;
 					break;
 				}
 				default:
 				{
-					debug writeln("Woof, non-CONFIRM/EXPEDITE received??");
-				}
-			}
-		}
-		//clearing old confirms against recent expedites
-		foreach(ubyte id, elevatorTAG; latestConfirm)
-		{
-			foreach(floor; elevatorTAG.orders)
-			if(latestExpedite[id].orders[floor] && elevatorTAG.orders[floor])
-			{
-				//check if there has been an expedite on a floor after the confirm for that floor
-				if((Clock.currTime().toUnixTime() - latestExpedite[id].timestamps[floor])
-					 < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
-				{
-					elevatorTAG.orders[floor] = false;
-					latestExpedite[id].orders[floor] = false;
+					debug writelnRed("Woof: non-CONFIRM/EXPEDITE received??");
 				}
 			}
 		}
 
-		//checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any.
-		foreach(ubyte id, elevatorTAG; latestConfirm)
+		/* Clearing old confirms against recent expedites */
+		foreach(ubyte id, elevatorTAG; latestConfirms)
+		{
+			foreach(floor; elevatorTAG.orders)
+			if(latestExpedites[id].orders[floor] && elevatorTAG.orders[floor])
+			{
+				/* Check if there has been an expedite on a floor after the confirm for that floor */
+				if((Clock.currTime().toUnixTime() - latestExpedites[id].timestamps[floor])
+					 < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
+				{
+					elevatorTAG.orders[floor] = false;
+					latestExpedites[id].orders[floor] = false;
+				}
+			}
+		}
+
+		/* Checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any */
+		foreach(ubyte id, elevatorTAG; latestConfirms)
 		{
 			foreach(floor; elevatorTAG.orders)
 			{
-				//check if there is a confirmed order on this floor, and if it has passed the confirmedTimeoutThreshold without a repleneshing action in between
+				/* Check if there is a confirmed order on this floor, and if it has passed the
+                 * confirmedTimeoutThreshold without a repleneshing action in between */
 				if(elevatorTAG.orders[floor])
 				{
-					//checking for replenishing action
-					if(((Clock.currTime().toUnixTime() - mostRecentConfirm[id]) < confirmedTimeoutThreshold)
-						|| ((Clock.currTime().toUnixTime() - mostRecentExpedite[id]) < confirmedTimeoutThreshold))
+					/* Checking for replenishing action */
+					if(((Clock.currTime().toUnixTime() - mostRecentConfirmTime[id]) < confirmedTimeoutThreshold)
+						|| ((Clock.currTime().toUnixTime() - mostRecentExpediteTime[id]) < confirmedTimeoutThreshold))
 					{
 						break;
 					}
 
-					//checking for timed-out orders
+					/* Checking for timed-out orders */
 					if((Clock.currTime().toUnixTime() - elevatorTAG.timestamps[floor]) > confirmedTimeoutThreshold)
 					{
 						message_t orderAlert;

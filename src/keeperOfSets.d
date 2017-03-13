@@ -65,7 +65,7 @@ void addBestElevatorWithState(state_t wantedState, int wantedFloor, ref elevator
 	debug writeln("Find best suited elevator in state: ", wantedState);
 	foreach(ubyte id, elevator; candidates)
 	{
-		if(elevator.currentState == state_t.wantedState)
+		if(elevator.currentState == wantedState)
 		{
 			entrants[id] = candidates[id];
 		}
@@ -83,7 +83,7 @@ void keepNearestElevator(elevator_t[ubyte] entrants, int floor)
 	ubyte nearestElevatorId; 
 	foreach(ubyte id, elevator; entrants) 
 	{ 
-		int distance = abs(elevator.currentFloor - orderFloor); 
+		int distance = abs(elevator.currentFloor - floor); 
 		if(distance <= smallestDistance) 
 		{ 
 			smallestDistance = distance; 
@@ -105,7 +105,7 @@ void keepFurtherestElevator(elevator_t[ubyte] entrants, int floor)
 	ubyte furtherestElevatorId; 
 	foreach(ubyte id, elevator; entrants) 
 	{ 
-		int distance = abs(elevator.currentFloor - orderFloor); 
+		int distance = abs(elevator.currentFloor - floor); 
 		if(distance >= longestDistance) 
 		{ 
 			longestDistance = distance; 
@@ -134,7 +134,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 
 	if(orderDirection == button_type_t.DOWN)
 	{
-		foreach(int iterator = 0; 0 .. 5)
+		foreach(int iterator; 0 .. 5)
 		{
 			if(entrants.length == 1)
 			{
@@ -180,13 +180,14 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					}
 					if(entrants.length > 1)
 					{
-						keepFurtherestElevatorId(entrants, orderFloor);
+						keepFurtherestElevator(entrants, orderFloor);
 					}
 					break;
 				}
 				default:
 				{
-					debug writelnRed("NO elevators eligable for DOWN order: ", orderFloor);
+					debug writelnRed("NO elevators eligable for DOWN order: ");
+                    debug writeln(orderFloor);
 				}
 			}
 		}
@@ -194,7 +195,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 
 	if(orderDirection == button_type_t.UP)
 	{
-		foreach(int iterator = 0; 0 .. 5)
+		foreach(int iterator; 0 .. 5)
 		{
 			if(entrants.length == 1)
 			{
@@ -240,13 +241,14 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					}
 					if(entrants.length > 1)
 					{
-						keepFurtherestElevatorId(entrants, orderFloor);
+						keepFurtherestElevator(entrants, orderFloor);
 					}
 					break;
 				}
 				default:
 				{
-					debug writelnRed("NO elevators eligable for UP order: ", orderFloor);
+					debug writelnRed("NO elevators eligable for UP order: ");
+                    debug writeln(orderFloor);
 				}
 			}
 		}
