@@ -134,22 +134,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 
 	if(orderDirection == button_type_t.DOWN)
 	{
-		foreach(ubyte id, elevator; candidates)
-		{
-			if(((elevator.currentFloor > orderFloor) && (elevator.currentState == state_t.GOING_DOWN)) 
-				|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_DOWN))
-			{
-				entrants[id] = candidates[id];
-			}
-		}
-
-		if(entrants.length > 1)
-		{
-			keepNearestElevator(entrants, orderFloor);
-			return entrants.keys[0];
-		}
-
-		foreach(int iterator = 0; 4)
+		foreach(int iterator = 0; 0 .. 5)
 		{
 			if(entrants.length == 1)
 			{
@@ -160,15 +145,31 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			{
 				case 0:
 				{
+					foreach(ubyte id, elevator; candidates)
+					{
+						if(((elevator.currentFloor > orderFloor) && (elevator.currentState == state_t.GOING_DOWN)) 
+							|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_DOWN))
+						{
+							entrants[id] = candidates[id];
+						}
+					}
+					if(entrants.length > 1)
+					{
+						keepNearestElevator(entrants, orderFloor);
+						return entrants.keys[0];
+					}					
+				}
+				case 1:
+				{
 					addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
 					break;
 				}
-				case 1:
+				case 2:
 				{
 					addBestElevatorWithState(state_t.GOING_UP, orderFloor, candidates, entrants);
 					break;
 				}
-				case 2:
+				case 3:
 				{
 					foreach(ubyte id, elevator; candidates)
 					{
@@ -183,107 +184,71 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					}
 					break;
 				}
+				default:
+				{
+					debug writelnRed("NO elevators eligable for DOWN order: ", orderFloor);
+				}
 			}
-		}
-
-		if(entrants.length == 1)
-		{
-			debug writeln("the only candidate GOING_DOWN and currently ABOVE is elev.ID: ", entrants.keys);
-			return entrants.keys[0];
-		}
-
-		addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
-			
-		if(entrants.length == 1)
-		{
-			return entrants.keys[0];
-		}
-			
-		addBestElevatorWithState(state_t.GOING_UP, orderFloor, candidates, entrants);
-			
-		if(entrants.length == 1)
-		{
-			return entrants.keys[0];
-		}
-
-		debug writeln("there was no one IDLE og GOING_UP; choosing a sub-optimal GOING_DOWN instead");
-			
-		foreach(ubyte id, elevator; candidates)
-		{
-			if(((elevator.currentFloor <= orderFloor) && (elevator.currentState == state_t.GOING_DOWN)))
-			{
-				entrants[id] = candidates[id];
-			}
-		}
-
-		if(entrants.length > 1)
-		{
-			keepFurtherestElevatorId(entrants, orderFloor);
-		}
-
-		if(entrants.length == 1)
-		{
-			return entrants.keys[0];
 		}
 	}	
 
 	if(orderDirection == button_type_t.UP)
 	{
-		foreach(ubyte id, elevator; candidates)
+		foreach(int iterator = 0; 0 .. 5)
 		{
-			if(((elevator.currentFloor < orderFloor) && (elevator.currentState == state_t.GOING_UP)) 
-				|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_UP))
+			if(entrants.length == 1)
 			{
-				entrants[id] = candidates[id];
+				return entrants.keys[0];
 			}
-		}
 
-		//multiple eligable entrants
-		if(entrants.length > 1)
-		{
-			keepNearestElevator(entrants, orderFloor);
-			return entrants.keys[0];
-		}
-
-		//only one eligabe entrant
-		if(entrants.length == 1)
-		{
-			debug writeln("the only candidate GOING_UP and currently BELOW is elev.ID: ", entrants.keys);
-			return entrants.keys[0];
-		}
-
-		addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
-		
-		if(entrants.length == 1)
-		{
-			return entrants.keys[0];
-		}
-
-		addBestElevatorWithState(state_t.GOING_DOWN, orderFloor, candidates, entrants);
-
-		if(entrants.length == 1)
-		{
-			return entrants.keys[0];
-		}
-
-		debug writeln("there was no one IDLE og GOING_DOWN; choosing a sub-optimal GOING_UP instead");
-
-		foreach(ubyte id, elevator; candidates)
-		{
-			if(((elevator.currentFloor >= orderFloor) && (elevator.currentState == state_t.GOING_UP)))
+			switch(iterator)
 			{
-				entrants[id] = candidates[id];
+				case 0:
+				{
+					foreach(ubyte id, elevator; candidates)
+					{
+						if(((elevator.currentFloor < orderFloor) && (elevator.currentState == state_t.GOING_UP)) 
+							|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_UP))
+						{
+							entrants[id] = candidates[id];
+						}
+					}
+					if(entrants.length > 1)
+					{
+						keepNearestElevator(entrants, orderFloor);
+						return entrants.keys[0];
+					}					
+				}
+				case 1:
+				{
+					addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
+					break;
+				}
+				case 2:
+				{
+					addBestElevatorWithState(state_t.GOING_DOWN, orderFloor, candidates, entrants);
+					break;
+				}
+				case 3:
+				{
+					foreach(ubyte id, elevator; candidates)
+					{
+						if(((elevator.currentFloor >= orderFloor) && (elevator.currentState == state_t.GOING_UP)))
+						{
+							entrants[id] = candidates[id];
+						}
+					}
+					if(entrants.length > 1)
+					{
+						keepFurtherestElevatorId(entrants, orderFloor);
+					}
+					break;
+				}
+				default:
+				{
+					debug writelnRed("NO elevators eligable for UP order: ", orderFloor);
+				}
 			}
-		}
-
-		if(entrants.length > 1)
-		{
-			keepFurtherestElevatorId(entrants, orderFloor);
-		}
-
-		if(entrants.length == 1)
-		{
-			return entrants.keys[0];
 		}
 	}
 	return messenger.getMyID();
