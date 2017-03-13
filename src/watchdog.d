@@ -19,12 +19,12 @@ import debugUtils,
        iolib;
 
 /*
- * @brief   Thread responsible for watching the livelihood of other elevators
- * @details watchdogThread sends orphaned orders of timed out elevators to the delegator
+ * @brief   Thread responsible for watching the livelihood of other elevatorTAGs
+ * @details watchdogThread sends orphaned orders of timed out elevatorTAGs to the delegator
  *
  * @param toNetworkChn: channel directed to external network
- * @param ordersToThisElevatorChn: channel directed to this elevator
- * @param elevatorID: the ID of this elevator
+ * @param ordersToThiselevatorTAGChn: channel directed to this elevatorTAG
+ * @param elevatorTAGID: the ID of this elevatorTAG
  */
 
 struct watchdogTAG
@@ -47,7 +47,7 @@ void watchdogThread(
 	ref shared NonBlockingChannel!message_t watchdogAlertChn,
 
 	ref shared NonBlockingChannel!message_t toNetworkChn,
-	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
+	ref shared NonBlockingChannel!message_t ordersToThiselevatorTAGChn,
 	ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
 	)
 {
@@ -85,46 +85,49 @@ void watchdogThread(
 					mostRecentExpedite[receivedFromKeeper.senderID] = receivedFromKeeper.timestamp;
 					break;
 				}
+				default:
+				{
+					debug writeln("Woof, non-CONFIRM/EXPEDITE received??");
+				}
 			}
 		}
-
 		//clearing old confirms against recent expedites
-		foreach(elevator; latestConfirm)//assuming latestConfirm and latestExpedite is of same length
+		foreach(elevatorTAG; latestConfirm.byValue)
 		{
-			foreach(floor; latestConfirm.orders)
-			if(latestExpedite[elevator].orders[floor] && latestConfirm.orders[floor])
+			foreach(floor; elevatorTAG.orders)
+			if(latestExpedite[elevatorTAG].orders[floor] && latestConfirm.orders[floor])
 			{
 				//check if there has been an expedite on a floor after the confirm for that floor
-				if((Clock.currTime().toUnixTime() - latestExpedite[elevator].timestamps[floor])
-					 < (Clock.currTime().toUnixTime()) - latestConfirm[elevator].timestamps[floor])
+				if((Clock.currTime().toUnixTime() - latestExpedite[elevatorTAG].timestamps[floor])
+					 < (Clock.currTime().toUnixTime()) - latestConfirm[elevatorTAG].timestamps[floor])
 				{
-					latestConfirm[elevator].orders[floor] = false;
-					latestExpedite[elevator].orders[floor] = false;
+					latestConfirm[elevatorTAG].orders[floor] = false;
+					latestExpedite[elevatorTAG].orders[floor] = false;
 				}
 			}
 		}
 
 		//checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any.
-		foreach(elevator; latestConfirm)//again assuming latestConfirm and latestExpedite is of same length.
+		foreach(elevatorTAG; latestConfirm.byValue)
 		{
-			foreach(floor; main.latestConfirm.orders)
+			foreach(floor; elevatorTAG.orders)
 			{
 				//check if there is a confirmed order on this floor, and if it has passed the confirmedTimeoutThreshold without a repleneshing action in between
-				if(latestConfirm[elevator].orders[floor])
+				if(latestConfirm[elevatorTAG].orders[floor])
 				{
 					//checking for replenishing action
-					if(((Clock.currTime().toUnixTime() - mostRecentConfirm[elevator]) < confirmedTimeoutThreshold)
-						|| ((Clock.currTime().toUnixTime() - mostRecentExpedite[elevator]) < confirmedTimeoutThreshold))
+					if(((Clock.currTime().toUnixTime() - mostRecentConfirm[elevatorTAG]) < confirmedTimeoutThreshold)
+						|| ((Clock.currTime().toUnixTime() - mostRecentExpedite[elevatorTAG]) < confirmedTimeoutThreshold))
 					{
 						break;
 					}
 
 					//checking for timed-out orders
-					if((Clock.currTime().toUnixTime() - latestConfirm[elevator].timestamps[floor]) > confirmedTimeoutThreshold)
+					if((Clock.currTime().toUnixTime() - latestConfirm[elevatorTAG].timestamps[floor]) > confirmedTimeoutThreshold)
 					{
 						message_t orderAlert;
 						orderAlert.header = message_header_t.watchdogAlert;
-						orderAlert.targetID = elevator;
+						orderAlert.targetID = elevatorTAG;
 						orderAlert.orderFloor = floor;
 						watchdogAlertChn.insert(orderAlert);
 					}
