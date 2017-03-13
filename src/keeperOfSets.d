@@ -157,7 +157,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					{
 						keepNearestElevator(entrants, orderFloor);
 						return entrants.keys[0];
-					}					
+					}
+					break;					
 				}
 				case 1:
 				{
@@ -218,7 +219,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					{
 						keepNearestElevator(entrants, orderFloor);
 						return entrants.keys[0];
-					}					
+					}
+					break;					
 				}
 				case 1:
 				{
