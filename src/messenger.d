@@ -75,9 +75,11 @@ struct message_t
 	shared int[main.nrOfFloors] syncInfo;
 }
 
-private shared ubyte _myID = 0;
+const Duration heartbeatPeriod = dur!"msecs"(300);
 
+private shared ubyte _myID = 0;
 private PeerList peerList;
+private Duration heartbeatTime;
 
 ubyte getMyID()
 {
@@ -133,9 +135,14 @@ void messengerThread(
 
 	message_t receivedToNetworkOrder;
 	message_t receivedToElevatorOrder;
+    message_t heartbeat;
+    heartbeat.header = message_header_t.heartbeat;
+    heartbeat.senderID = getMyID();
+    heartbeatTime = Clock.currTime().fracSecs();
 
 	while (true)
 	{
+        /* Pass orders to network, but filter some */
 		if (toNetworkChn.extract(receivedToNetworkOrder))
 		{
 			if ( (receivedToNetworkOrder.header == message_header_t.delegateOrder)
@@ -151,9 +158,12 @@ void messengerThread(
 			msecs(1),
 			(message_t orderFromNetwork)
 		{
-			debug writeln("messenger: received order from network");
-			debug writeln(" >> ", orderFromNetwork);
-			ordersToThisElevatorChn.insert(orderFromNetwork);
+            if (orderFromNetwork.header != message_header_t.heartbeat)
+            {
+                debug writeln("messenger: received order from network");
+                debug writeln(" >> ", orderFromNetwork);
+                ordersToThisElevatorChn.insert(orderFromNetwork);
+            }
 
 		},
 			(PeerList list)
@@ -168,6 +178,17 @@ void messengerThread(
 			debug writeln(">>> ", v);
 		}
 			);
+        
+        /* Send heartbeat */
+        if (heartbeatTime < heartbeatTime + heartbeatPeriod)
+        {
+            heartbeatTime = Clock.currTime().fracSecs();
+            heartbeat.timestamp = Clock.currTime().toUnixTime();
+            heartbeat.currentState = getCurrentState();
+            heartbeat.currentFloor = getPreviousValidFloor();
+
+            toNetworkChn.insert(heartbeat);
+        }
 	}
 }
 

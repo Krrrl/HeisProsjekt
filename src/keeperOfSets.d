@@ -139,7 +139,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			if(entrants.length == 1)
 			{
                 debug writelnRed("FOUND A MATCH at DOWN and iterator");
-                debug writeln(iterator);
+                debug writeln(iterator - 1);
 				return entrants.keys[0];
 			}
 
@@ -202,7 +202,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			if(entrants.length == 1)
 			{
                 debug writelnRed("FOUND A MATCH at UP and iterator");
-                debug writeln(iterator);
+                debug writeln(iterator - 1);
 				return entrants.keys[0];
 			}
 
@@ -401,7 +401,6 @@ ubyte highestID()
 	{
 		if (messenger.getMyID() < elevator.ID)
 			highestID = elevator.ID;
-
 	}
 	return highestID;
 }
