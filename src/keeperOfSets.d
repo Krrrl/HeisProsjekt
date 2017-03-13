@@ -3,6 +3,7 @@ import std.stdio,
        std.conv,
        std.algorithm.searching,
        std.random,
+       std.math,
        std.datetime;
 
 import main,
@@ -124,7 +125,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					|| (elevator.prevState == state_t.GOING_DOWN)))
 
 			{
-				entrants[ID] = candidates[ID];
+				entrants[elevator.ID] = candidates[elevator.ID];
 			}
 			//only one eligabe entrant
 			if(entrants.length == 1)
@@ -139,7 +140,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				ubyte nearestElevator;
 				foreach(elevator; entrants)
 				{
-					if((elevator.currentFloor - orderFloor) <= nearestFloor)
+					if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
 					{
 						nearestElevator = elevator.ID;
 					}
@@ -170,7 +171,38 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				ubyte nearestElevator;
 				foreach(elevator; entrants)
 				{
-					if((elevator.currentFloor - orderFloor) <= nearestFloor)
+					if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				debug writeln("the closest IDLE elevator is elev.ID: ", nearestElevator);
+				return nearestElevator;
+				}
+			}
+			if(entrants.length == 0)
+			{
+				debug writeln("no one IDLE available, resorting to GOING UP elevators.");
+				foreach(elevator; entrants)
+				{
+					if(elevator.currentState == state_t.UP)
+					{
+						entrants[elevator.ID] = candidates[elevator.ID];
+					}
+				}
+				
+				if(entrants.length == 1)
+				{
+					return entrants.keys;
+				}
+
+				if(entrants.length > 1)
+				{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
 					{
 						nearestElevator = elevator.ID;
 					}
@@ -206,7 +238,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				ubyte nearestElevator;
 				foreach(elevator; entrants)
 				{
-					if((orderFloor - elevator.currentFloor) <= nearestFloor)
+					if(abs(orderFloor - elevator.currentFloor) <= nearestFloor)
 					{
 						nearestElevator = elevator.ID;
 					}
@@ -236,11 +268,42 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				ubyte nearestElevator;
 				foreach(elevator; entrants)
 				{
-					if((elevator.currentFloor - orderFloor) <= nearestFloor)
+					if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
 					{
 						nearestElevator = elevator.ID;
 					}
 				}
+				return nearestElevator;
+				}
+			}
+			if(entrants.length == 0)
+			{
+				debug writeln("no one IDLE available, resorting to GOING UP elevators.");
+				foreach(elevator; entrants)
+				{
+					if(elevator.currentState == state_t.DOWN)
+					{
+						entrants[elevator.ID] = candidates[elevator.ID];
+					}
+				}
+				
+				if(entrants.length == 1)
+				{
+					return entrants.keys;
+				}
+
+				if(entrants.length > 1)
+				{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				debug writeln("the closest IDLE elevator is elev.ID: ", nearestElevator);
 				return nearestElevator;
 				}
 			}
@@ -415,120 +478,120 @@ void keeperOfSetsThread(
 		{
 			switch (receivedFromNetwork.header)
 			{
-			case message_header_t.delegateOrder:
-			{
-				if (receivedFromNetwork.targetID == messenger.getMyID())
+				case message_header_t.delegateOrder:
 				{
-					/* Confirm order */
-					message_t confirmingOrder;
-					confirmingOrder.header          = message_header_t.confirmOrder;
-					confirmingOrder.senderID        = messenger.getMyID();
-					// TODO: [REMOVE THIS COMMENT ?] Setting targetID to the delegators sender ID, so that the delegator knows that it was its order we now confirm
-					confirmingOrder.targetID        = receivedFromNetwork.senderID;
-					confirmingOrder.orderFloor      = receivedFromNetwork.orderFloor;
-					confirmingOrder.orderDirection  = receivedFromNetwork.orderDirection;
-					confirmingOrder.currentState    = getCurrentState();
-					confirmingOrder.currentFloor    = getPreviousValidFloor();
-					confirmingOrder.timestamp       = Clock.currTime().toUnixTime();
-					toNetworkChn.insert(confirmingOrder);
+					if (receivedFromNetwork.targetID == messenger.getMyID())
+					{
+						/* Confirm order */
+						message_t confirmingOrder;
+						confirmingOrder.header          = message_header_t.confirmOrder;
+						confirmingOrder.senderID        = messenger.getMyID();
+						// TODO: [REMOVE THIS COMMENT ?] Setting targetID to the delegators sender ID, so that the delegator knows that it was its order we now confirm
+						confirmingOrder.targetID        = receivedFromNetwork.senderID;
+						confirmingOrder.orderFloor      = receivedFromNetwork.orderFloor;
+						confirmingOrder.orderDirection  = receivedFromNetwork.orderDirection;
+						confirmingOrder.currentState    = getCurrentState();
+						confirmingOrder.currentFloor    = getPreviousValidFloor();
+						confirmingOrder.timestamp       = Clock.currTime().toUnixTime();
+						toNetworkChn.insert(confirmingOrder);
+					}
+					break;
 				}
-				break;
-			}
 
-			case message_header_t.confirmOrder:
-			{
-				/* Add to senders lists */
-				addToList(
-					receivedFromNetwork.senderID,
-					receivedFromNetwork.orderDirection,
-					receivedFromNetwork.orderFloor);
+				case message_header_t.confirmOrder:
+				{
+					/* Add to senders lists */
+					addToList(
+						receivedFromNetwork.senderID,
+						receivedFromNetwork.orderDirection,
+						receivedFromNetwork.orderFloor);
 
-				/* Update operators orders if the new order is ours */
-				if (receivedFromNetwork.senderID == messenger.getMyID())
+					/* Update operators orders if the new order is ours */
+					if (receivedFromNetwork.senderID == messenger.getMyID())
+						operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+
+					/* Set light if order is local-internal or external */
+					if (receivedFromNetwork.targetID == messenger.getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
+					{
+						elev_set_button_lamp(
+							cast(elev_button_type_t)receivedFromNetwork.orderDirection,
+							receivedFromNetwork.orderFloor,
+							1);
+					}
+
+					watchdogFeedChn.insert(receivedFromNetwork);
+
+					break;
+				}
+
+				case message_header_t.expediteOrder:
+				{
+					/* Remove from elevators lists */
+					removeFromList(
+						receivedFromNetwork.senderID,
+						receivedFromNetwork.orderFloor);
+
+					/* Update operators orders */
 					operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
 
-				/* Set light if order is local-internal or external */
-				if (receivedFromNetwork.targetID == messenger.getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
-				{
+					/* Clear external lights */
 					elev_set_button_lamp(
-						cast(elev_button_type_t)receivedFromNetwork.orderDirection,
-						receivedFromNetwork.orderFloor,
-						1);
-				}
-
-				watchdogFeedChn.insert(receivedFromNetwork);
-
-				break;
-			}
-
-			case message_header_t.expediteOrder:
-			{
-				/* Remove from elevators lists */
-				removeFromList(
-					receivedFromNetwork.senderID,
-					receivedFromNetwork.orderFloor);
-
-				/* Update operators orders */
-				operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
-
-				/* Clear external lights */
-				elev_set_button_lamp(
-					elev_button_type_t.BUTTON_CALL_UP,
-					receivedFromNetwork.orderFloor,
-					0);
-				elev_set_button_lamp(
-					elev_button_type_t.BUTTON_CALL_DOWN,
-					receivedFromNetwork.orderFloor,
-					0);
-
-				/* Clear internal light if we are the expeditor */
-				if (receivedFromNetwork.senderID == messenger.getMyID())
-				{
-					elev_set_button_lamp(
-						elev_button_type_t.BUTTON_COMMAND,
+						elev_button_type_t.BUTTON_CALL_UP,
 						receivedFromNetwork.orderFloor,
 						0);
+					elev_set_button_lamp(
+						elev_button_type_t.BUTTON_CALL_DOWN,
+						receivedFromNetwork.orderFloor,
+						0);
+
+					/* Clear internal light if we are the expeditor */
+					if (receivedFromNetwork.senderID == messenger.getMyID())
+					{
+						elev_set_button_lamp(
+							elev_button_type_t.BUTTON_COMMAND,
+							receivedFromNetwork.orderFloor,
+							0);
+					}
+
+					watchdogFeedChn.insert(receivedFromNetwork);
+
+					break;
 				}
 
-				watchdogFeedChn.insert(receivedFromNetwork);
-
-				break;
-			}
-
-			case message_header_t.syncRequest:
-			{
-				debug writeln("keeper: received sync request");
-				if (messenger.getMyID() == highestID())
+				case message_header_t.syncRequest:
 				{
-					message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
-					debug writeln("keeper: sync message crote");
-					toNetworkChn.insert(syncInfo);
+					debug writeln("keeper: received sync request");
+					if (messenger.getMyID() == highestID())
+					{
+						message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
+						debug writeln("keeper: sync message crote");
+						toNetworkChn.insert(syncInfo);
+					}
+					break;
 				}
-				break;
-			}
 
-			case message_header_t.syncInfo:
-			{
-				if (messenger.getMyID() == receivedFromNetwork.targetID)
+				case message_header_t.syncInfo:
 				{
-					syncMySet(receivedFromNetwork.syncInfo);
-					operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+					if (messenger.getMyID() == receivedFromNetwork.targetID)
+					{
+						syncMySet(receivedFromNetwork.syncInfo);
+						operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+					}
+					break;
 				}
-				break;
-			}
 
-			case message_header_t.heartbeat:
-			{
-				updateHeartbeat(receivedFromNetwork.senderID,
-						receivedFromNetwork.currentState,
-						receivedFromNetwork.currentFloor,
-						receivedFromNetwork.timestamp);
-				break;
-			}
-			default:
-			{
-				break;
-			}
+				case message_header_t.heartbeat:
+				{
+					updateHeartbeat(receivedFromNetwork.senderID,
+							receivedFromNetwork.currentState,
+							receivedFromNetwork.currentFloor,
+							receivedFromNetwork.timestamp);
+					break;
+				}
+				default:
+				{
+					break;
+				}
 			}
 		}
 
@@ -584,6 +647,5 @@ void keeperOfSetsThread(
 			debug writeln("keeper: alive ", aliveElevators.keys);
 			debug writeln("keeper: inactive ", deadElevators.keys);
 		}
-
 	}
 }

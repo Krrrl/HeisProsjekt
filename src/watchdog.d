@@ -53,13 +53,6 @@ void watchdogThread(
 {
 	debug writelnGreen("    [x] watchdogThread");
 
-
-
-	// Wait for other threads to initialize before starting the Night's Watch
-	Thread.sleep(msecs(20));
-
-	int heartBeats = 0;
-
 	message_t receivedFromKeeper;
 
 	while (true)
@@ -75,8 +68,7 @@ void watchdogThread(
 				{
 					watchdogTAG confirmed;
 					confirmed.orders[receivedFromKeeper.orderFloor] = true;
-					confirmed.timestamps[receivedFromKeeper.orderFloor] =
-                        receivedFromKeeper.timestamp;
+					confirmed.timestamps[receivedFromKeeper.orderFloor] = receivedFromKeeper.timestamp;
 					latestConfirm[receivedFromKeeper.senderID] = confirmed;
 					debug writeln("Woof, CONFIRM received from: ", receivedFromKeeper.senderID, "at time: ", receivedFromKeeper.timestamp);
 					mostRecentConfirm[receivedFromKeeper.senderID] = receivedFromKeeper.timestamp;
@@ -87,8 +79,7 @@ void watchdogThread(
 				{
 					watchdogTAG expedited;
 					expedited.orders[receivedFromKeeper.orderFloor] = true;
-					expedited.timestamps[receivedFromKeeper.orderFloor] =
-                        receivedFromKeeper.timestamp;
+					expedited.timestamps[receivedFromKeeper.orderFloor] = receivedFromKeeper.timestamp;
 					latestExpedite[receivedFromKeeper.senderID] = expedited;
 					debug writeln("Woof, EXPEDITE received from: ", receivedFromKeeper.senderID, "at time: ", receivedFromKeeper.timestamp);
 					mostRecentExpedite[receivedFromKeeper.senderID] = receivedFromKeeper.timestamp;
@@ -140,6 +131,5 @@ void watchdogThread(
 				}
 			}
 		}
-		Thread.getThis().sleep(seconds(4)); //for the night is _long_ and full of errors
 	}
 }

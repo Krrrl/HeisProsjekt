@@ -97,62 +97,62 @@ bool shouldStopAtFloor(int floor)
 
 	switch (currentState)
 	{
-	case (state_t.GOING_UP):
-	{
-        /* Check if */
-		if (ordersForThisElevator[button_type_t.UP].length)
-			if (canFind(ordersForThisElevator[button_type_t.UP], floor))
-				return true;
-		if (ordersForThisElevator[button_type_t.DOWN].length)
+		case (state_t.GOING_UP):
 		{
-			int highestDownOrder    = sort(ordersForThisElevator[button_type_t.DOWN].dup)[$ - 1];
-			int[] nonDownOrders     = ordersForThisElevator[button_type_t.UP].dup ~ ordersForThisElevator[button_type_t.INTERNAL].dup;
-
-			int highestNonDownOrder;
-			if (nonDownOrders.length)
+	        /* Check if */
+			if (ordersForThisElevator[button_type_t.UP].length)
+				if (canFind(ordersForThisElevator[button_type_t.UP], floor))
+					return true;
+			if (ordersForThisElevator[button_type_t.DOWN].length)
 			{
-				sort(nonDownOrders);
-				highestNonDownOrder = nonDownOrders[$ - 1];
+				int highestDownOrder    = sort(ordersForThisElevator[button_type_t.DOWN].dup)[$ - 1];
+				int[] nonDownOrders     = ordersForThisElevator[button_type_t.UP].dup ~ ordersForThisElevator[button_type_t.INTERNAL].dup;
+
+				int highestNonDownOrder;
+				if (nonDownOrders.length)
+				{
+					sort(nonDownOrders);
+					highestNonDownOrder = nonDownOrders[$ - 1];
+				}
+				else
+					highestNonDownOrder = 0;
+				if (highestDownOrder == floor && highestDownOrder > highestNonDownOrder)
+					return true;
 			}
-			else
-				highestNonDownOrder = 0;
-			if (highestDownOrder == floor && highestDownOrder > highestNonDownOrder)
-				return true;
+			return false;
 		}
-		return false;
-	}
-	case (state_t.GOING_DOWN):
-	{
-		if (ordersForThisElevator[button_type_t.DOWN].length)
-			if (canFind(ordersForThisElevator[button_type_t.DOWN], floor))
-				return true;
-		if (ordersForThisElevator[button_type_t.UP].length)
+		case (state_t.GOING_DOWN):
 		{
-			int lowestUpOrder       = sort(ordersForThisElevator[button_type_t.UP].dup)[0];
-			int[] nonUpOrders       = ordersForThisElevator[button_type_t.DOWN].dup ~ ordersForThisElevator[button_type_t.INTERNAL].dup;
-
-			int lowestNonUpOrder;
-			if (nonUpOrders.length)
+			if (ordersForThisElevator[button_type_t.DOWN].length)
+				if (canFind(ordersForThisElevator[button_type_t.DOWN], floor))
+					return true;
+			if (ordersForThisElevator[button_type_t.UP].length)
 			{
-				sort(nonUpOrders);
-				lowestNonUpOrder = nonUpOrders[0];
+				int lowestUpOrder       = sort(ordersForThisElevator[button_type_t.UP].dup)[0];
+				int[] nonUpOrders       = ordersForThisElevator[button_type_t.DOWN].dup ~ ordersForThisElevator[button_type_t.INTERNAL].dup;
+
+				int lowestNonUpOrder;
+				if (nonUpOrders.length)
+				{
+					sort(nonUpOrders);
+					lowestNonUpOrder = nonUpOrders[0];
+				}
+				else
+					lowestNonUpOrder = main.nrOfFloors;
+				if (lowestUpOrder == floor && lowestUpOrder <= lowestNonUpOrder)
+					return true;
 			}
-			else
-				lowestNonUpOrder = main.nrOfFloors;
-			if (lowestUpOrder == floor && lowestUpOrder <= lowestNonUpOrder)
-				return true;
+			return false;
 		}
-		return false;
-	}
-	case (state_t.FLOORSTOP):
-	{
-		//TODO:
-		return false;
-	}
-	default:
-	{
-		return false;
-	}
+		case (state_t.FLOORSTOP):
+		{
+			//TODO:
+			return false;
+		}
+		default:
+		{
+			return false;
+		}
 	}
 }
 
@@ -220,97 +220,97 @@ void operatorThread(
 		/* Do state dependent actions */
 		switch (currentState)
 		{
-		case (state_t.INIT):
-		{
-			// Find a floor, go up/down?
-			// Wait for syncInfo?
-
-			elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-			/* Go to idle */
-			debug writelnPurple("operator: IDLE");
-			currentState = state_t.IDLE;
-
-			break;
-		}
-		case (state_t.GOING_UP):
-		{
-			if (shouldStopAtFloor(currentFloor))
+			case (state_t.INIT):
 			{
-				stopAtFloor();
-				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-				previousDirection = state_t.GOING_UP;
-			}
+				// Find a floor, go up/down?
+				// Wait for syncInfo?
 
-			elev_motor_direction_t correctDirection =
-				getDirectionToNextOrder(previousValidFloor);
-			if (correctDirection != elev_motor_direction_t.DIRN_UP)
-			{
-				debug writelnRed("operator: was going the wrong way");
-				debug writelnPurple("operator: IDLE");
 				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-				currentState = state_t.IDLE;
-			}
-			break;
-		}
-		case (state_t.GOING_DOWN):
-		{
-			if (shouldStopAtFloor(currentFloor))
-			{
-				stopAtFloor();
-				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-				previousDirection = state_t.GOING_DOWN;
-			}
-
-			elev_motor_direction_t correctDirection =
-				getDirectionToNextOrder(previousValidFloor);
-			if (correctDirection != elev_motor_direction_t.DIRN_DOWN)
-			{
-				debug writelnRed("operator: was going the wrong way");
-				debug writelnPurple("operator: IDLE");
-				elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-				currentState = state_t.IDLE;
-			}
-			break;
-		}
-		case (state_t.FLOORSTOP):
-		{
-			/* Check for new orders */
-			if (shouldStopAtFloor(previousValidFloor))
-			{
-				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-				timeAtFloorStop = Clock.currTime.toUnixTime();
-			}
-
-			if (Clock.currTime.toUnixTime() > (timeAtFloorStop + stopDuration))
-			{
-				elev_set_door_open_lamp(0);
+				/* Go to idle */
 				debug writelnPurple("operator: IDLE");
 				currentState = state_t.IDLE;
+
+				break;
 			}
-			break;
-		}
-		case (state_t.IDLE):
-		{
-			/* Check for new orders */
-			elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
-			if (directionToNextOrder == elev_motor_direction_t.DIRN_UP)
+			case (state_t.GOING_UP):
 			{
-				debug writelnPurple("operator: GOING_UP");
-				elev_set_motor_direction(directionToNextOrder);
-				currentState = state_t.GOING_UP;
+				if (shouldStopAtFloor(currentFloor))
+				{
+					stopAtFloor();
+					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+					previousDirection = state_t.GOING_UP;
+				}
+
+				elev_motor_direction_t correctDirection =
+					getDirectionToNextOrder(previousValidFloor);
+				if (correctDirection != elev_motor_direction_t.DIRN_UP)
+				{
+					debug writelnRed("operator: was going the wrong way");
+					debug writelnPurple("operator: IDLE");
+					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+					currentState = state_t.IDLE;
+				}
+				break;
 			}
-			if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
+			case (state_t.GOING_DOWN):
 			{
-				debug writelnPurple("operator: GOING_DOWN");
-				elev_set_motor_direction(directionToNextOrder);
-				currentState = state_t.GOING_DOWN;
+				if (shouldStopAtFloor(currentFloor))
+				{
+					stopAtFloor();
+					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+					previousDirection = state_t.GOING_DOWN;
+				}
+
+				elev_motor_direction_t correctDirection =
+					getDirectionToNextOrder(previousValidFloor);
+				if (correctDirection != elev_motor_direction_t.DIRN_DOWN)
+				{
+					debug writelnRed("operator: was going the wrong way");
+					debug writelnPurple("operator: IDLE");
+					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+					currentState = state_t.IDLE;
+				}
+				break;
 			}
-			break;
-		}
-		default:
-		{
-			break;
-		}
+			case (state_t.FLOORSTOP):
+			{
+				/* Check for new orders */
+				if (shouldStopAtFloor(previousValidFloor))
+				{
+					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+					timeAtFloorStop = Clock.currTime.toUnixTime();
+				}
+
+				if (Clock.currTime.toUnixTime() > (timeAtFloorStop + stopDuration))
+				{
+					elev_set_door_open_lamp(0);
+					debug writelnPurple("operator: IDLE");
+					currentState = state_t.IDLE;
+				}
+				break;
+			}
+			case (state_t.IDLE):
+			{
+				/* Check for new orders */
+				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
+				if (directionToNextOrder == elev_motor_direction_t.DIRN_UP)
+				{
+					debug writelnPurple("operator: GOING_UP");
+					elev_set_motor_direction(directionToNextOrder);
+					currentState = state_t.GOING_UP;
+				}
+				if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
+				{
+					debug writelnPurple("operator: GOING_DOWN");
+					elev_set_motor_direction(directionToNextOrder);
+					currentState = state_t.GOING_DOWN;
+				}
+				break;
+			}
+			default:
+			{
+				break;
+			}
 		}
 	}
 }
