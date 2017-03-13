@@ -20,6 +20,7 @@ public:
 	bool[int] downQueue;
 	bool[int] internalQueue;
 	state_t currentState;
+	state_t prevState;
 	int currentFloor;
 	long lastTimestamp;
 	ubyte ID;
@@ -55,10 +56,15 @@ void retireElevator(ubyte id)
 	debug writeln("keeper: elevator [", id, "] RETIRED");
 }
 
+//findMatch finner best egna elevator for en ordre ved å se på tilstand + floor,
+//i tilfellet det e flere mulige for oppdraget velge den den nærmeste.
+
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
-	if (orderDirection == button_type_t.INTERNAL)
+/*	if (orderDirection == button_type_t.INTERNAL)
+	{
 		return messenger.getMyID();
+	}
 
 	elevator_t[ubyte] candidates    = (cast(elevator_t[ubyte])aliveElevators).dup;
 	elevator_t[ubyte] entrants      = candidates.dup;
@@ -67,6 +73,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 	debug writeln(candidates.keys);
 
 	// TODO: What do we want to prioritise? What to filter on?
+	
+
 
 	// check for going in same direction?
 	foreach (entrant; entrants)
@@ -89,13 +97,154 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 	// check for being below/above?
 	// TODO: More filters?
 
-	// check for smallest distance ??
+	// check for smallest distance ??    -Nei, imo: too optimized.
 
 
 	debug writelnYellow("keeper: Candidates at end of match: ");
 	debug writeln(candidates.keys);
 
 	return choice(candidates.keys); // TODO: actually return a matched id
+	*/
+
+	if (orderDirection == button_type_t.INTERNAL)
+	{
+		debug writeln("giving myself the internal order for floor: ", orderFloor);
+		return messenger.getMyID();
+	}
+
+	elevator_t[ubyte] candidates = (cast(elevator_t[ubyte])aliveElevators).dup;
+	elevator_t[ubyte] entrants;
+
+	if(orderDirection == button_type_t.DOWN)
+	{
+		foreach(elevator; candidates)
+		{
+			if((elevator.currentFloor > orderFloor) 
+				&& ((elevator.currentState == GOING_DOWN) 
+					|| (elevator.prevState == GOING_DOWN)))
+
+			{
+				entrants.add(elevator.ID);
+			}
+			//only one eligabe entrant
+			if(entrants.length == 1)
+			{
+				debug writeln("the only candidate GOING_DOWN and currently ABOVE is elev.ID: ", entrants.keys);
+				return entrants.keys;
+			}
+			//multiple eligable entrants
+			if(entrants.length > 1)
+			{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if((elevator.currentFloor - orderFloor) <= nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				debug writeln("the closest going-down candidate is elev.ID: ", nearestElevator);
+				return nearestElevator;
+			}
+
+			if(entrants.length == 0)
+			{
+				debug writeln("there was no one going-down eligable, choosing an IDLE instead");
+				foreach(elevator; candidates)
+				{
+					if(elevator.currentState == IDLE)
+					{
+						entrants.add(elevator.ID);
+					}
+				}
+				
+				if(entrants.length == 1)
+				{
+					return entrants.keys;
+				}
+
+				if(entrants.length > 1)
+				{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if((elevator.currentFloor - orderFloor) <= nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				debug writeln("the closest IDLE elevator is elev.ID: ", nearestElevator);
+				return nearestElevator;
+				}
+			}
+		}
+
+	if(orderDirection == button_type_t.UP)
+	{
+		foreach(elevator; candidates)
+		{
+			if((elevator.currentFloor < orderFloor) 
+				&& ((elevator.currentState == GOING_UP) 
+					|| (elevator.prevState == GOING_UP)))
+
+			{
+				entrants.add(elevator.ID);
+			}
+			//only one eligabe entrant
+			if(entrants.length == 1)
+			{
+				debug writeln("the only candidate GOING_UP and currently BELOW is elev.ID: ", entrants.keys);
+				return entrants.keys;
+			}
+			//multiple eligable entrants
+			if(entrants.length > 1)
+			{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if((orderFloor - elevator.currentFloor) <= nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				debug writeln("the closest GOING_UP candidate is elev.ID: ", nearestElevator);
+				return nearestElevator;
+			}
+			//no eligable entrant after primary search, finding best suited IDLE instead.
+			if(entrants.length == 0)
+			{
+				foreach(elevator; candidates)
+				{
+					if(elevator.currentState == IDLE)
+					{
+						entrants.add(elevator.ID);
+					}
+				}
+				
+				if(entrants.length == 1)
+				{
+					return entrants.keys;
+				}
+
+				if(entrants.length > 1)
+				{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if((elevator.currentFloor - orderFloor) <= nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				return nearestElevator;
+				}
+			}
+		}
+	}
 }
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
@@ -172,6 +321,10 @@ orderList_t getElevatorsOrders(ubyte id)
 
 void updateHeartbeat(ubyte targetID, state_t currentState, int currentFloor, long timestamp)
 {
+	if(currentState != aliveElevators[targetID].currentState)
+	{
+		aliveElevators[targetID].prevState = aliveElevators[targetID].currentState;
+	}
 	aliveElevators[targetID].currentState   = currentState;
 	aliveElevators[targetID].currentFloor   = currentFloor;
 	aliveElevators[targetID].lastTimestamp  = timestamp;
@@ -243,6 +396,9 @@ void keeperOfSetsThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
+
+	ref shared NonBlockingChannel!message_t watchdogAlertChn,
+
 	ref shared NonBlockingChannel!orderList_t operatorsOrdersChn,
 	ref shared NonBlockingChannel!PeerList peerListChn
 	)
@@ -250,6 +406,7 @@ void keeperOfSetsThread(
 	debug writelnGreen("    [x] keeperOfSetsThread");
 
 	message_t receivedFromNetwork;
+	message_t watchdogAlert;
 
 	while (true)
 	{
@@ -297,6 +454,9 @@ void keeperOfSetsThread(
 						receivedFromNetwork.orderFloor,
 						1);
 				}
+
+				watchdogFeedChn.insert(receivedFromNetwork);
+
 				break;
 			}
 
@@ -328,6 +488,9 @@ void keeperOfSetsThread(
 						receivedFromNetwork.orderFloor,
 						0);
 				}
+
+				watchdogFeedChn.insert(receivedFromNetwork);
+
 				break;
 			}
 
@@ -367,6 +530,52 @@ void keeperOfSetsThread(
 			}
 			}
 		}
+
+		//check if the watchdog has picked up any timeouts
+		if(watchdogAlertChn.extract(watchdogAlert))
+		{
+			message_t reDistOrder;
+			if(watchdogAlert.targetID in aliveElevators)
+			{
+				if(aliveElevators[watchdogAlert.targetID].downQueue)
+				{
+					reDistOrder.header = message_header_t.delegateOrder;
+					reDistOrder.senderID = messenger.getMyID();
+					reDistOrder.targetID = watchdogAlert.targetID;
+					reDistOrder.orderFloor = watchdogAlert.orderFloor;
+					reDistOrder.orderDirection = DOWN;
+					reDistOrder.timestamp = Clock.currTime().toUnixTime();
+					
+					toNetworkChn.insert(reDistOrder);
+
+				}
+				if(aliveElevators[watchdogAlert.targetID].upQueue)
+				{
+					reDistOrder.header = message_header_t.delegateOrder;
+					reDistOrder.senderID = messenger.getMyID();
+					reDistOrder.targetID = watchdogAlert.targetID;
+					reDistOrder.orderFloor = watchdogAlert.orderFloor;
+					reDistOrder.orderDirection = UP;
+					reDistOrder.timestamp = Clock.currTime().toUnixTime();
+					
+					toNetworkChn.insert(reDistOrder);
+
+				}
+				if(aliveElevators[watchdogAlert.targetID].internalQueue)
+				{
+					reDistOrder.header = message_header_t.delegateOrder;
+					reDistOrder.senderID = messenger.getMyID();
+					reDistOrder.targetID = watchdogAlert.targetID;
+					reDistOrder.orderFloor = watchdogAlert.orderFloor;
+					reDistOrder.orderDirection = INTERNAL;
+					reDistOrder.timestamp = Clock.currTime().toUnixTime();
+
+					toNetworkChn.insert(reDistOrder);
+
+				}
+			}
+		}
+
 
 		/* Update lists of alive and inactive elevators */
 		PeerList extractedPeerList = PeerList();

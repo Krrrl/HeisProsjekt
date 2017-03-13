@@ -55,7 +55,8 @@ enum message_header_t
 	expediteOrder,
 	syncRequest,
 	syncInfo,
-	heartbeat
+	heartbeat,
+	watchdogAlert
 }
 
 /*

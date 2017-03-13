@@ -38,6 +38,9 @@ void main(string[] args)
 	shared NonBlockingChannel!orderList_t operatorsOrdersChn = new
         NonBlockingChannel!orderList_t;
 
+    /* channel for watchdog-alerts to keeper about timed-out orders */
+    shared NonBlockingChannel!message_t watchdogAlertChn = new NonBlockingChannel!message_t;
+
 	debug writeln("Initializing lift hardware ...");
 	elev_type ioInterface = elev_type.ET_Comedi;
 	if (args.length > 1)
@@ -66,6 +69,7 @@ void main(string[] args)
 		toNetworkChn,
 		ordersToThisElevatorChn,
 		watchdogFeedChn,
+		watchdogAlertChn,
 		operatorsOrdersChn,
 		peerListChn);
 
@@ -78,6 +82,7 @@ void main(string[] args)
 	watchdogTid = spawnLinked(
 		&watchdogThread,
 		watchdogFeedChn,
+		watchdogAlertChn,
 		toNetworkChn,
 		ordersToThisElevatorChn,
 		ordersToBeDelegatedChn);
