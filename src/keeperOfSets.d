@@ -183,7 +183,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 
 			if(entrants.length > 1)
 			{
-				int nearestFloor;
+				int nearestFloor = main.nrOfFloors;
 				ubyte nearestElevator;
 				foreach(ubyte id, elevator; entrants)
 				{
@@ -218,7 +218,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		//multiple eligable entrants
 		if(entrants.length > 1)
 		{
-			int nearestFloor;
+			int nearestFloor = main.nrOfFloors;
 			ubyte nearestElevator;
 			foreach(ubyte id, elevator; entrants)
 			{
