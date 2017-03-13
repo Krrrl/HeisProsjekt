@@ -120,11 +120,11 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		foreach(elevator; candidates)
 		{
 			if((elevator.currentFloor > orderFloor) 
-				&& ((elevator.currentState == GOING_DOWN) 
-					|| (elevator.prevState == GOING_DOWN)))
+				&& ((elevator.currentState == state_t.GOING_DOWN) 
+					|| (elevator.prevState == state_t.GOING_DOWN)))
 
 			{
-				entrants.add(elevator.ID);
+				entrants[ID] = candidates[ID];
 			}
 			//only one eligabe entrant
 			if(entrants.length == 1)
@@ -153,7 +153,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				debug writeln("there was no one going-down eligable, choosing an IDLE instead");
 				foreach(elevator; candidates)
 				{
-					if(elevator.currentState == IDLE)
+					if(elevator.currentState == state_t.IDLE)
 					{
 						entrants.add(elevator.ID);
 					}
@@ -180,14 +180,15 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				}
 			}
 		}
+    }
 
 	if(orderDirection == button_type_t.UP)
 	{
 		foreach(elevator; candidates)
 		{
 			if((elevator.currentFloor < orderFloor) 
-				&& ((elevator.currentState == GOING_UP) 
-					|| (elevator.prevState == GOING_UP)))
+				&& ((elevator.currentState == state_t.GOING_UP) 
+					|| (elevator.prevState == state_t.GOING_UP)))
 
 			{
 				entrants.add(elevator.ID);
@@ -218,7 +219,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			{
 				foreach(elevator; candidates)
 				{
-					if(elevator.currentState == IDLE)
+					if(elevator.currentState == state_t.IDLE)
 					{
 						entrants.add(elevator.ID);
 					}
