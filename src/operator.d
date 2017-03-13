@@ -81,19 +81,25 @@ message_t createExpediteOrder(int floor)
 	return newExpediteOrder;
 }
 
-bool shouldStopAtFloor(int floor)
+bool shouldStopToExpediteOnFloor(int floor)
 {
 	int[] allOrders = ordersForThisElevator[button_type_t.UP] ~
 			  ordersForThisElevator[button_type_t.DOWN] ~
 			  ordersForThisElevator[button_type_t.INTERNAL];
 
-	/* Stop the elevator if there are no orders */
+	/* Don't tell to expedite if there are no orders */
 	if (!cast(bool)allOrders.length)
-		return true;
+    {
+		return false;
+    }
 
 	if (ordersForThisElevator[button_type_t.INTERNAL].length)
+    {
 		if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
+        {
 			return true;
+        }
+    }
 
 	switch (currentState)
 	{
@@ -101,8 +107,12 @@ bool shouldStopAtFloor(int floor)
 		{
 	        /* Check if */
 			if (ordersForThisElevator[button_type_t.UP].length)
+            {
 				if (canFind(ordersForThisElevator[button_type_t.UP], floor))
+                {
 					return true;
+                }
+            }
 			if (ordersForThisElevator[button_type_t.DOWN].length)
 			{
 				int highestDownOrder    = sort(ordersForThisElevator[button_type_t.DOWN].dup)[$ - 1];
@@ -115,17 +125,25 @@ bool shouldStopAtFloor(int floor)
 					highestNonDownOrder = nonDownOrders[$ - 1];
 				}
 				else
+                {
 					highestNonDownOrder = 0;
+                }
 				if (highestDownOrder == floor && highestDownOrder > highestNonDownOrder)
+                {
 					return true;
+                }
 			}
 			return false;
 		}
 		case (state_t.GOING_DOWN):
 		{
 			if (ordersForThisElevator[button_type_t.DOWN].length)
+            {
 				if (canFind(ordersForThisElevator[button_type_t.DOWN], floor))
+                {
 					return true;
+                }
+            }
 			if (ordersForThisElevator[button_type_t.UP].length)
 			{
 				int lowestUpOrder       = sort(ordersForThisElevator[button_type_t.UP].dup)[0];
@@ -138,9 +156,13 @@ bool shouldStopAtFloor(int floor)
 					lowestNonUpOrder = nonUpOrders[0];
 				}
 				else
+                {
 					lowestNonUpOrder = main.nrOfFloors;
+                }
 				if (lowestUpOrder == floor && lowestUpOrder <= lowestNonUpOrder)
+                {
 					return true;
+                }
 			}
 			return false;
 		}
@@ -170,17 +192,25 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 		case (state_t.GOING_UP):
 		{
 			if (allOrders.dup[$ - 1] > floor)
+            {
 				return elev_motor_direction_t.DIRN_UP;
+            }
 			if (allOrders.dup[0] < floor)
+            {
 				return elev_motor_direction_t.DIRN_DOWN;
+            }
 			break;
 		}
 		case (state_t.GOING_DOWN):
 		{
 			if (allOrders[0] < floor)
+            {
 				return elev_motor_direction_t.DIRN_DOWN;
+            }
 			if (allOrders[$ - 1] > floor)
+            {
 				return elev_motor_direction_t.DIRN_UP;
+            }
 			break;
 		}
 		}
@@ -210,12 +240,16 @@ void operatorThread(
 	{
 		/* Check for update in orders for this elevator */
 		if (operatorsOrdersChn.extract(ordersUpdate))
+        {
 			updateOrdersForThisElevator(ordersUpdate);
+        }
 
 		/* Read floor sensors */
 		currentFloor = elev_get_floor_sensor_signal();
 		if (currentFloor != -1)
+        {
 			previousValidFloor = currentFloor;
+        }
 
 		/* Do state dependent actions */
 		switch (currentState)
@@ -234,7 +268,7 @@ void operatorThread(
 			}
 			case (state_t.GOING_UP):
 			{
-				if (shouldStopAtFloor(currentFloor))
+				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
@@ -254,7 +288,7 @@ void operatorThread(
 			}
 			case (state_t.GOING_DOWN):
 			{
-				if (shouldStopAtFloor(currentFloor))
+				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
@@ -275,7 +309,7 @@ void operatorThread(
 			case (state_t.FLOORSTOP):
 			{
 				/* Check for new orders */
-				if (shouldStopAtFloor(previousValidFloor))
+				if (shouldStopToExpediteOnFloor(previousValidFloor))
 				{
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					timeAtFloorStop = Clock.currTime.toUnixTime();
@@ -291,7 +325,14 @@ void operatorThread(
 			}
 			case (state_t.IDLE):
 			{
-				/* Check for new orders */
+                /* Check for new orders on the same floor */
+				if (shouldStopToExpediteOnFloor(currentFloor))
+				{
+					stopAtFloor();
+					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+				}
+
+				/* Check for new orders elsewhere */
 				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
 				if (directionToNextOrder == elev_motor_direction_t.DIRN_UP)
 				{

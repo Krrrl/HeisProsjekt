@@ -138,6 +138,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		{
 			if(entrants.length == 1)
 			{
+                debug writelnRed("FOUND A MATCH at UP and iterator");
+                debug writeln(iterator);
 				return entrants.keys[0];
 			}
 
@@ -156,7 +158,6 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					if(entrants.length > 1)
 					{
 						keepNearestElevator(entrants, orderFloor);
-						return entrants.keys[0];
 					}
 					break;					
 				}
@@ -200,6 +201,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		{
 			if(entrants.length == 1)
 			{
+                debug writelnRed("FOUND A MATCH at UP and iterator");
+                debug writeln(iterator);
 				return entrants.keys[0];
 			}
 
@@ -218,7 +221,6 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					if(entrants.length > 1)
 					{
 						keepNearestElevator(entrants, orderFloor);
-						return entrants.keys[0];
 					}
 					break;					
 				}
@@ -255,6 +257,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			}
 		}
 	}
+    debug writelnRed("NO SUITABLE ELEVATOR. TAKING MYSELF");
 	return messenger.getMyID();
 }
 
