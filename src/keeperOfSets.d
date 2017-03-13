@@ -60,6 +60,67 @@ void retireElevator(ubyte id)
 //findMatch finner best egna elevator for en ordre ved å se på tilstand + floor,
 //i tilfellet det e flere mulige for oppdraget velge den den nærmeste.
 
+void addBestElevatorWithState(state_t wantedState, int wantedFloor, ref elevator_t[ubyte] candidates, ref elevator_t[ubyte] entrants)
+{
+	debug writeln("Find best suited elevator in state: ", wantedState);
+	foreach(ubyte id, elevator; candidates)
+	{
+		if(elevator.currentState == state_t.wantedState)
+		{
+			entrants[id] = candidates[id];
+		}
+	}
+
+	if(entrants.length > 1)
+	{
+		keepNearestElevator(entrants, wantedFloor);
+	}
+}
+
+void keepNearestElevator(elevator_t[ubyte] entrants, int floor)
+{
+	int smallestDistance = main.nrOfFloors;
+	ubyte nearestElevatorId; 
+	foreach(ubyte id, elevator; entrants) 
+	{ 
+		int distance = abs(elevator.currentFloor - orderFloor); 
+		if(distance <= smallestDistance) 
+		{ 
+			smallestDistance = distance; 
+			nearestElevatorId = id; 
+		} 
+	} 
+	foreach(ubyte id, elevator; entrants) 
+	{ 
+		if(id != nearestElevatorId) 
+		{ 
+			entrants.remove(id); 
+		} 
+	} 
+}
+
+void keepFurtherestElevator(elevator_t[ubyte] entrants, int floor)
+{
+	int longestDistance = 0;
+	ubyte furtherestElevatorId; 
+	foreach(ubyte id, elevator; entrants) 
+	{ 
+		int distance = abs(elevator.currentFloor - orderFloor); 
+		if(distance >= longestDistance) 
+		{ 
+			longestDistance = distance; 
+			furtherestElevatorId = id; 
+		} 
+	} 
+	foreach(ubyte id, elevator; entrants) 
+	{ 
+		if(id != furtherestElevatorId) 
+		{ 
+			entrants.remove(id); 
+		} 
+	} 
+}
+
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
 	if (orderDirection == button_type_t.INTERNAL)
@@ -81,123 +142,55 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				entrants[id] = candidates[id];
 			}
 		}
+
+		//multiple eligable entrants
+		if(entrants.length > 1)
+		{
+			keepNearestElevator(entrants, orderFloor);
+			return entrants.keys[0];
+		}
+
 		//only one eligabe entrant
 		if(entrants.length == 1)
 		{
 			debug writeln("the only candidate GOING_DOWN and currently ABOVE is elev.ID: ", entrants.keys);
 			return entrants.keys[0];
 		}
-		//multiple eligable entrants
+
+		addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
+			
+		if(entrants.length == 1)
+		{
+			return entrants.keys[0];
+		}
+			
+		addBestElevatorWithState(state_t.GOING_UP, orderFloor, candidates, entrants);
+			
+		if(entrants.length == 1)
+		{
+			return entrants.keys[0];
+		}
+
+		debug writeln("there was no one IDLE og GOING_UP; choosing a sub-optimal GOING_DOWN instead");
+			
+		foreach(ubyte id, elevator; candidates)
+		{
+			if(((elevator.currentFloor <= orderFloor) && (elevator.currentState == state_t.GOING_DOWN)))
+			{
+				entrants[id] = candidates[id];
+			}
+		}
+
 		if(entrants.length > 1)
 		{
-			int nearestFloor;
-			ubyte nearestElevator;
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
-				{
-					nearestElevator = id;
-				}
-			}
-			debug writeln("the closest going-down candidate is elev.ID: ", nearestElevator);
-			return nearestElevator;
+			keepFurtherestElevatorId(entrants, orderFloor);
 		}
 
-		if(entrants.length == 0)
+		if(entrants.length == 1)
 		{
-			debug writeln("there was no one going-down eligable, choosing an IDLE instead");
-			foreach(ubyte id, elevator; candidates)
-			{
-				if(elevator.currentState == state_t.IDLE)
-				{
-					entrants[id] = candidates[id];
-				}
-			}
-				
-			if(entrants.length == 1)
-			{
-				return entrants.keys[0];
-			}
-
-			if(entrants.length > 1)
-			{
-			int nearestFloor;
-			ubyte nearestElevator;
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
-				{
-					nearestElevator = id;
-				}
-			}
-			debug writeln("the closest IDLE elevator is elev.ID: ", nearestElevator);
-			return nearestElevator;
-			}
+			return entrants.keys[0];
 		}
-		if(entrants.length == 0)
-		{
-			debug writeln("no one IDLE available, resorting to GOING UP elevators.");
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(elevator.currentState == state_t.GOING_UP)
-				{
-					entrants[id] = candidates[id];
-				}
-			}
-				
-			if(entrants.length == 1)
-			{
-				return entrants.keys[0];
-			}
-
-			if(entrants.length > 1)
-			{
-			int nearestFloor;
-			ubyte nearestElevator;
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
-				{
-					nearestElevator = id;
-				}
-			}
-			debug writeln("the closest IDLE elevator is elev.ID: ", nearestElevator);
-			return nearestElevator;
-			}
-		}
-		if(entrants.length == 0)
-		{
-			debug writeln("there was no one going-down eligable, choosing a sub-optimal GOING DOWN instead");
-			foreach(ubyte id, elevator; candidates)
-			{
-				if(((elevator.currentFloor <= orderFloor) && (elevator.currentState == state_t.GOING_DOWN)))
-				{
-					entrants[id] = candidates[id];
-				}
-			}
-				
-			if(entrants.length == 1)
-			{
-				return entrants.keys[0];
-			}
-
-			if(entrants.length > 1)
-			{
-				int nearestFloor = main.nrOfFloors;
-				ubyte nearestElevator;
-				foreach(ubyte id, elevator; entrants)
-				{
-					if(abs(elevator.currentFloor - orderFloor) > nearestFloor)
-					{
-						nearestElevator = id;
-					}
-				}
-				debug writeln("the farthest GOING DOWN elevator is elev.ID: ", nearestElevator);
-				return nearestElevator;
-			}
-		}
-	}
-    
+	}	
 
 	if(orderDirection == button_type_t.UP)
 	{
@@ -209,120 +202,53 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				entrants[id] = candidates[id];
 			}
 		}
+
+		//multiple eligable entrants
+		if(entrants.length > 1)
+		{
+			keepNearestElevator(entrants, orderFloor);
+			return entrants.keys[0];
+		}
+
 		//only one eligabe entrant
 		if(entrants.length == 1)
 		{
 			debug writeln("the only candidate GOING_UP and currently BELOW is elev.ID: ", entrants.keys);
 			return entrants.keys[0];
 		}
-		//multiple eligable entrants
+
+		addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
+		
+		if(entrants.length == 1)
+		{
+			return entrants.keys[0];
+		}
+
+		addBestElevatorWithState(state_t.GOING_DOWN, orderFloor, candidates, entrants);
+
+		if(entrants.length == 1)
+		{
+			return entrants.keys[0];
+		}
+
+		debug writeln("there was no one IDLE og GOING_DOWN; choosing a sub-optimal GOING_UP instead");
+
+		foreach(ubyte id, elevator; candidates)
+		{
+			if(((elevator.currentFloor >= orderFloor) && (elevator.currentState == state_t.GOING_UP)))
+			{
+				entrants[id] = candidates[id];
+			}
+		}
+
 		if(entrants.length > 1)
 		{
-			int nearestFloor = main.nrOfFloors;
-			ubyte nearestElevator;
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(abs(orderFloor - elevator.currentFloor) <= nearestFloor)
-				{
-					nearestElevator = id;
-				}
-			}
-			debug writeln("the closest GOING_UP candidate is elev.ID: ", nearestElevator);
-			return nearestElevator;
+			keepFurtherestElevatorId(entrants, orderFloor);
 		}
-		//no eligable entrant after primary search, finding best suited IDLE instead.
-		if(entrants.length == 0)
-		{
-			foreach(ubyte id, elevator; candidates)
-			{
-				if(elevator.currentState == state_t.IDLE)
-				{
-					entrants[id] = candidates[id];
-				}
-			}
-				
-			if(entrants.length == 1)
-			{
-				return entrants.keys[0];
-			}
 
-			if(entrants.length > 1)
-			{
-			int nearestFloor;
-			ubyte nearestElevator;
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
-				{
-					nearestElevator = id;
-				}
-			}
-			return nearestElevator;
-			}
-		}
-		if(entrants.length == 0)
+		if(entrants.length == 1)
 		{
-			debug writeln("no one IDLE available, resorting to GOING UP elevators.");
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(elevator.currentState == state_t.GOING_DOWN)
-				{
-					entrants[id] = candidates[id];
-				}
-			}
-				
-			if(entrants.length == 1)
-			{
-				return entrants.keys[0];
-			}
-
-			if(entrants.length > 1)
-			{
-			int nearestFloor;
-			ubyte nearestElevator;
-			foreach(ubyte id, elevator; entrants)
-			{
-				if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
-				{
-					nearestElevator = id;
-				}
-			}
-			debug writeln("the closest IDLE elevator is elev.ID: ", nearestElevator);
-			return nearestElevator;
-			}
-		}
-		if(entrants.length == 0)
-		{
-			debug writeln("there was no one going-down eligable, choosing a sub-optimal GOING UP instead");
-			foreach(ubyte id, elevator; candidates)
-			{
-				if(((elevator.currentFloor >= orderFloor) && (elevator.currentState == state_t.GOING_UP)))
-				{
-					entrants[id] = candidates[id];
-				}
-			}
-				
-			if(entrants.length == 1)
-			{
-                debug writeln("only one entrant left");
-				return entrants.keys[0];
-			}
-
-			if(entrants.length > 1)
-			{
-                debug writeln("more than one entrant left");
-				int nearestFloor;
-				ubyte nearestElevator = 0;
-				foreach(ubyte id, elevator; entrants)
-				{
-					if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
-					{
-						nearestElevator = id;
-					}
-				}
-				debug writeln("the farthest GOING UP elevator is elev.ID: ", nearestElevator);
-				return nearestElevator;
-			}
+			return entrants.keys[0];
 		}
 	}
 	return messenger.getMyID();
