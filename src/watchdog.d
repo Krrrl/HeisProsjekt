@@ -92,42 +92,42 @@ void watchdogThread(
 			}
 		}
 		//clearing old confirms against recent expedites
-		foreach(elevatorTAG; latestConfirm.byValue)
+		foreach(ubyte id, elevatorTAG; latestConfirm)
 		{
 			foreach(floor; elevatorTAG.orders)
-			if(latestExpedite[elevatorTAG].orders[floor] && latestConfirm.orders[floor])
+			if(latestExpedite[id].orders[floor] && latestConfirm[id].orders[floor])
 			{
 				//check if there has been an expedite on a floor after the confirm for that floor
-				if((Clock.currTime().toUnixTime() - latestExpedite[elevatorTAG].timestamps[floor])
-					 < (Clock.currTime().toUnixTime()) - latestConfirm[elevatorTAG].timestamps[floor])
+				if((Clock.currTime().toUnixTime() - latestExpedite[id].timestamps[floor])
+					 < (Clock.currTime().toUnixTime()) - latestConfirm[id].timestamps[floor])
 				{
-					latestConfirm[elevatorTAG].orders[floor] = false;
-					latestExpedite[elevatorTAG].orders[floor] = false;
+					latestConfirm[id].orders[floor] = false;
+					latestExpedite[id].orders[floor] = false;
 				}
 			}
 		}
 
 		//checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any.
-		foreach(elevatorTAG; latestConfirm.byValue)
+		foreach(ubyte id, elevatorTAG; latestConfirm)
 		{
 			foreach(floor; elevatorTAG.orders)
 			{
 				//check if there is a confirmed order on this floor, and if it has passed the confirmedTimeoutThreshold without a repleneshing action in between
-				if(latestConfirm[elevatorTAG].orders[floor])
+				if(latestConfirm[id].orders[floor])
 				{
 					//checking for replenishing action
-					if(((Clock.currTime().toUnixTime() - mostRecentConfirm[elevatorTAG]) < confirmedTimeoutThreshold)
-						|| ((Clock.currTime().toUnixTime() - mostRecentExpedite[elevatorTAG]) < confirmedTimeoutThreshold))
+					if(((Clock.currTime().toUnixTime() - mostRecentConfirm[id]) < confirmedTimeoutThreshold)
+						|| ((Clock.currTime().toUnixTime() - mostRecentExpedite[id]) < confirmedTimeoutThreshold))
 					{
 						break;
 					}
 
 					//checking for timed-out orders
-					if((Clock.currTime().toUnixTime() - latestConfirm[elevatorTAG].timestamps[floor]) > confirmedTimeoutThreshold)
+					if((Clock.currTime().toUnixTime() - latestConfirm[id].timestamps[floor]) > confirmedTimeoutThreshold)
 					{
 						message_t orderAlert;
 						orderAlert.header = message_header_t.watchdogAlert;
-						orderAlert.targetID = elevatorTAG;
+						orderAlert.targetID = id;
 						orderAlert.orderFloor = floor;
 						watchdogAlertChn.insert(orderAlert);
 					}
