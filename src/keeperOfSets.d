@@ -138,7 +138,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		{
 			if(entrants.length == 1)
 			{
-                debug writelnRed("FOUND A MATCH at UP and iterator");
+                debug writelnRed("FOUND A MATCH at DOWN and iterator");
                 debug writeln(iterator);
 				return entrants.keys[0];
 			}
