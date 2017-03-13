@@ -18,14 +18,6 @@ import debugUtils,
        messenger,
        iolib;
 
-/*
- * @brief   Thread responsible for watching the livelihood of other elevatorTAGs
- * @details watchdogThread sends orphaned orders of timed out elevatorTAGs to the delegator
- *
- * @param toNetworkChn: channel directed to external network
- * @param ordersToThiselevatorTAGChn: channel directed to this elevatorTAG
- * @param elevatorTAGID: the ID of this elevatorTAG
- */
 
 struct watchdogTAG
 {
@@ -41,6 +33,14 @@ private long[ubyte] mostRecentExpedite;
 //longest do-nothing interval allowed.
 private long confirmedTimeoutThreshold = 4;
 
+/*
+ * @brief   Thread responsible for watching the livelihood of other elevatorTAGs
+ * @details watchdogThread sends orphaned orders of timed out elevatorTAGs to the delegator
+ *
+ * @param toNetworkChn: channel directed to external network
+ * @param ordersToThiselevatorTAGChn: channel directed to this elevatorTAG
+ * @param elevatorTAGID: the ID of this elevatorTAG
+ */
 void watchdogThread(
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
 

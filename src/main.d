@@ -79,13 +79,14 @@ void main(string[] args)
 		ordersToThisElevatorChn,
 		peerListChn);
 
-	watchdogTid = spawnLinked(
+	/*watchdogTid = spawnLinked(
 		&watchdogThread,
 		watchdogFeedChn,
 		watchdogAlertChn,
 		toNetworkChn,
 		ordersToThisElevatorChn,
 		ordersToBeDelegatedChn);
+        */
 
 	operatorTid = spawnLinked(
 		&operatorThread,
