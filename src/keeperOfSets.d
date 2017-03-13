@@ -155,7 +155,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				{
 					if(elevator.currentState == state_t.IDLE)
 					{
-						entrants.add(elevator.ID);
+						entrants[elevator.ID] = candidates[elevator.ID];
 					}
 				}
 				
@@ -191,7 +191,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 					|| (elevator.prevState == state_t.GOING_UP)))
 
 			{
-				entrants.add(elevator.ID);
+				entrants[elevator.ID] = candidates[elevator.ID];
 			}
 			//only one eligabe entrant
 			if(entrants.length == 1)
@@ -221,7 +221,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				{
 					if(elevator.currentState == state_t.IDLE)
 					{
-						entrants.add(elevator.ID);
+						entrants[elevator.ID] = candidates[elevator.ID];
 					}
 				}
 				
@@ -538,39 +538,27 @@ void keeperOfSetsThread(
 			message_t reDistOrder;
 			if(watchdogAlert.targetID in aliveElevators)
 			{
+				reDistOrder.header = message_header_t.delegateOrder;
+				reDistOrder.senderID = messenger.getMyID();
+				reDistOrder.targetID = watchdogAlert.targetID;
+				reDistOrder.orderFloor = watchdogAlert.orderFloor;
+				reDistOrder.timestamp = Clock.currTime().toUnixTime();
+				
 				if(aliveElevators[watchdogAlert.targetID].downQueue)
 				{
-					reDistOrder.header = message_header_t.delegateOrder;
-					reDistOrder.senderID = messenger.getMyID();
-					reDistOrder.targetID = watchdogAlert.targetID;
-					reDistOrder.orderFloor = watchdogAlert.orderFloor;
 					reDistOrder.orderDirection = DOWN;
-					reDistOrder.timestamp = Clock.currTime().toUnixTime();
-					
 					toNetworkChn.insert(reDistOrder);
 
 				}
 				if(aliveElevators[watchdogAlert.targetID].upQueue)
 				{
-					reDistOrder.header = message_header_t.delegateOrder;
-					reDistOrder.senderID = messenger.getMyID();
-					reDistOrder.targetID = watchdogAlert.targetID;
-					reDistOrder.orderFloor = watchdogAlert.orderFloor;
 					reDistOrder.orderDirection = UP;
-					reDistOrder.timestamp = Clock.currTime().toUnixTime();
-					
 					toNetworkChn.insert(reDistOrder);
 
 				}
 				if(aliveElevators[watchdogAlert.targetID].internalQueue)
 				{
-					reDistOrder.header = message_header_t.delegateOrder;
-					reDistOrder.senderID = messenger.getMyID();
-					reDistOrder.targetID = watchdogAlert.targetID;
-					reDistOrder.orderFloor = watchdogAlert.orderFloor;
 					reDistOrder.orderDirection = INTERNAL;
-					reDistOrder.timestamp = Clock.currTime().toUnixTime();
-
 					toNetworkChn.insert(reDistOrder);
 
 				}
