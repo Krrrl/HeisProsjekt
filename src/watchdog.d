@@ -95,13 +95,13 @@ void watchdogThread(
 		foreach(ubyte id, elevatorTAG; latestConfirm)
 		{
 			foreach(floor; elevatorTAG.orders)
-			if(latestExpedite[id].orders[floor] && latestConfirm[id].orders[floor])
+			if(latestExpedite[id].orders[floor] && elevatorTAG.orders[floor])
 			{
 				//check if there has been an expedite on a floor after the confirm for that floor
 				if((Clock.currTime().toUnixTime() - latestExpedite[id].timestamps[floor])
-					 < (Clock.currTime().toUnixTime()) - latestConfirm[id].timestamps[floor])
+					 < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
 				{
-					latestConfirm[id].orders[floor] = false;
+					elevatorTAG.orders[floor] = false;
 					latestExpedite[id].orders[floor] = false;
 				}
 			}
@@ -113,7 +113,7 @@ void watchdogThread(
 			foreach(floor; elevatorTAG.orders)
 			{
 				//check if there is a confirmed order on this floor, and if it has passed the confirmedTimeoutThreshold without a repleneshing action in between
-				if(latestConfirm[id].orders[floor])
+				if(elevatorTAG.orders[floor])
 				{
 					//checking for replenishing action
 					if(((Clock.currTime().toUnixTime() - mostRecentConfirm[id]) < confirmedTimeoutThreshold)
@@ -123,7 +123,7 @@ void watchdogThread(
 					}
 
 					//checking for timed-out orders
-					if((Clock.currTime().toUnixTime() - latestConfirm[id].timestamps[floor]) > confirmedTimeoutThreshold)
+					if((Clock.currTime().toUnixTime() - elevatorTAG.timestamps[floor]) > confirmedTimeoutThreshold)
 					{
 						message_t orderAlert;
 						orderAlert.header = message_header_t.watchdogAlert;
