@@ -60,12 +60,11 @@ void watchdogThread(
 		/* Keeping timestamp lists up-to-date */
 		if(watchdogFeedChn.extract(receivedFromKeeper))
 		{
+            ubyte senderID = receivedFromKeeper.senderID;
+            int orderFloor = receivedFromKeeper.orderFloor;
+            long timestamp = receivedFromKeeper.timestamp;
 			switch(receivedFromKeeper.header)
 			{
-                ubyte senderID = receivedFromKeeper.senderID;
-                int orderFloor = receivedFromKeeper.orderFloor;
-                long timestamp = receivedFromKeeper.timestamp;
-
 				case message_header_t.confirmOrder:
 				{
                     if (senderID !in latestConfirms)
