@@ -62,51 +62,6 @@ void retireElevator(ubyte id)
 
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
-/*	if (orderDirection == button_type_t.INTERNAL)
-	{
-		return messenger.getMyID();
-	}
-
-	elevator_t[ubyte] candidates    = (cast(elevator_t[ubyte])aliveElevators).dup;
-	elevator_t[ubyte] entrants      = candidates.dup;
-
-	debug writelnYellow("keeper: Candidates at start of matching: ");
-	debug writeln(candidates.keys);
-
-	// TODO: What do we want to prioritise? What to filter on?
-	
-
-
-	// check for going in same direction?
-	foreach (entrant; entrants)
-	{
-		// TODO: I feel like this logic doesn't make sense. If there is only one elevator going up and we have an up order - but it is above the order, then it might not be the best match; a elevator going down but soon turning around could be faster.
-		if (cast(button_type_t)entrant.currentState != orderDirection)
-		{
-			entrants.remove(entrant.ID);
-			debug writeln("removing candidate: ", id);
-		}
-	}
-
-	// If no entrant elevators survived, replenish them all
-	if (entrants.length == 0)
-		entrants = candidates.dup;
-	// Else, update the current candidates
-	else
-		candidates = entrants.dup;
-
-	// check for being below/above?
-	// TODO: More filters?
-
-	// check for smallest distance ??    -Nei, imo: too optimized.
-
-
-	debug writelnYellow("keeper: Candidates at end of match: ");
-	debug writeln(candidates.keys);
-
-	return choice(candidates.keys); // TODO: actually return a matched id
-	*/
-
 	if (orderDirection == button_type_t.INTERNAL)
 	{
 		debug writeln("giving myself the internal order for floor: ", orderFloor);
@@ -211,6 +166,39 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				return nearestElevator;
 				}
 			}
+			if(entrants.length == 0)
+			{
+				debug writeln("there was no one going-down eligable, choosing a sub-optimal GOING DOWN instead");
+				foreach(elevator; candidates)
+				{
+					if((elevator.currentFloor <= orderFloor) 
+						&& ((elevator.currentState == state_t.GOING_DOWN) 
+						|| (elevator.prevState == state_t.GOING_DOWN)))
+					{
+						entrants[elevator.ID] = candidates[elevator.ID];
+					}
+				}
+				
+				if(entrants.length == 1)
+				{
+					return entrants.keys[0];
+				}
+
+				if(entrants.length > 1)
+				{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if(abs(elevator.currentFloor - orderFloor) > nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				debug writeln("the farthest GOING DOWN elevator is elev.ID: ", nearestElevator);
+				return nearestElevator;
+				}
+			}
 		}
     }
 
@@ -307,7 +295,44 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				return nearestElevator;
 				}
 			}
+			if(entrants.length == 0)
+			{
+				debug writeln("there was no one going-down eligable, choosing a sub-optimal GOING UP instead");
+				foreach(elevator; candidates)
+				{
+					if((elevator.currentFloor >= orderFloor) 
+						&& ((elevator.currentState == state_t.GOING_UP) 
+						|| (elevator.prevState == state_t.GOING_UP)))
+					{
+						entrants[elevator.ID] = candidates[elevator.ID];
+					}
+				}
+				
+				if(entrants.length == 1)
+				{
+					return entrants.keys[0];
+				}
+
+				if(entrants.length > 1)
+				{
+				int nearestFloor;
+				ubyte nearestElevator;
+				foreach(elevator; entrants)
+				{
+					if(abs(elevator.currentFloor - orderFloor) <= nearestFloor)
+					{
+						nearestElevator = elevator.ID;
+					}
+				}
+				debug writeln("the farthest GOING UP elevator is elev.ID: ", nearestElevator);
+				return nearestElevator;
+				}
+			}
 		}
+	}
+	default:
+	{
+		return messenger.getMyID();
 	}
 }
 
