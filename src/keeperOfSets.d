@@ -131,7 +131,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			if(entrants.length == 1)
 			{
 				debug writeln("the only candidate GOING_DOWN and currently ABOVE is elev.ID: ", entrants.keys);
-				return entrants.keys;
+				return entrants.keys[0];
 			}
 			//multiple eligable entrants
 			if(entrants.length > 1)
@@ -162,7 +162,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				
 				if(entrants.length == 1)
 				{
-					return entrants.keys;
+					return entrants.keys[0];
 				}
 
 				if(entrants.length > 1)
@@ -185,7 +185,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				debug writeln("no one IDLE available, resorting to GOING UP elevators.");
 				foreach(elevator; entrants)
 				{
-					if(elevator.currentState == state_t.UP)
+					if(elevator.currentState == state_t.GOING_UP)
 					{
 						entrants[elevator.ID] = candidates[elevator.ID];
 					}
@@ -193,7 +193,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				
 				if(entrants.length == 1)
 				{
-					return entrants.keys;
+					return entrants.keys[0];
 				}
 
 				if(entrants.length > 1)
@@ -229,7 +229,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			if(entrants.length == 1)
 			{
 				debug writeln("the only candidate GOING_UP and currently BELOW is elev.ID: ", entrants.keys);
-				return entrants.keys;
+				return entrants.keys[0];
 			}
 			//multiple eligable entrants
 			if(entrants.length > 1)
@@ -259,7 +259,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				
 				if(entrants.length == 1)
 				{
-					return entrants.keys;
+					return entrants.keys[0];
 				}
 
 				if(entrants.length > 1)
@@ -281,7 +281,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				debug writeln("no one IDLE available, resorting to GOING UP elevators.");
 				foreach(elevator; entrants)
 				{
-					if(elevator.currentState == state_t.DOWN)
+					if(elevator.currentState == state_t.GOING_DOWN)
 					{
 						entrants[elevator.ID] = candidates[elevator.ID];
 					}
@@ -289,7 +289,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				
 				if(entrants.length == 1)
 				{
-					return entrants.keys;
+					return entrants.keys[0];
 				}
 
 				if(entrants.length > 1)
@@ -609,19 +609,19 @@ void keeperOfSetsThread(
 				
 				if(aliveElevators[watchdogAlert.targetID].downQueue)
 				{
-					reDistOrder.orderDirection = DOWN;
+					reDistOrder.orderDirection = button_type_t.DOWN;
 					toNetworkChn.insert(reDistOrder);
 
 				}
 				if(aliveElevators[watchdogAlert.targetID].upQueue)
 				{
-					reDistOrder.orderDirection = UP;
+					reDistOrder.orderDirection = button_type_t.UP;
 					toNetworkChn.insert(reDistOrder);
 
 				}
 				if(aliveElevators[watchdogAlert.targetID].internalQueue)
 				{
-					reDistOrder.orderDirection = INTERNAL;
+					reDistOrder.orderDirection = button_type_t.INTERNAL;
 					toNetworkChn.insert(reDistOrder);
 
 				}
