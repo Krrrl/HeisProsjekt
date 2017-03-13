@@ -330,10 +330,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			}
 		}
 	}
-	default:
-	{
-		return messenger.getMyID();
-	}
+	return messenger.getMyID();
 }
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
