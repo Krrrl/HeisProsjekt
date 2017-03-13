@@ -143,14 +143,49 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			}
 		}
 
-		//multiple eligable entrants
 		if(entrants.length > 1)
 		{
 			keepNearestElevator(entrants, orderFloor);
 			return entrants.keys[0];
 		}
 
-		//only one eligabe entrant
+		foreach(int iterator = 0; 4)
+		{
+			if(entrants.length == 1)
+			{
+				return entrants.keys[0];
+			}
+
+			switch(iterator)
+			{
+				case 0:
+				{
+					addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
+					break;
+				}
+				case 1:
+				{
+					addBestElevatorWithState(state_t.GOING_UP, orderFloor, candidates, entrants);
+					break;
+				}
+				case 2:
+				{
+					foreach(ubyte id, elevator; candidates)
+					{
+						if(((elevator.currentFloor <= orderFloor) && (elevator.currentState == state_t.GOING_DOWN)))
+						{
+							entrants[id] = candidates[id];
+						}
+					}
+					if(entrants.length > 1)
+					{
+						keepFurtherestElevatorId(entrants, orderFloor);
+					}
+					break;
+				}
+			}
+		}
+
 		if(entrants.length == 1)
 		{
 			debug writeln("the only candidate GOING_DOWN and currently ABOVE is elev.ID: ", entrants.keys);
