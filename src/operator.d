@@ -41,6 +41,7 @@ private int[][button_type_t] ordersForThisElevator;
 
 state_t getCurrentState()
 {
+    //return previousDirection;
 	return currentState;
 }
 
@@ -266,6 +267,10 @@ void operatorThread(
 
 	debug writelnYellow("Operator: now INIT");
 
+    /* Set motor to go down for init state */
+    elev_set_motor_direction(elev_motor_direction_t.DIRN_DOWN);
+    previousDirection = state_t.GOING_DOWN;
+
 	while (true)
 	{
 		/* Check for update in orders for this elevator */
@@ -286,12 +291,8 @@ void operatorThread(
 		{
 			case (state_t.INIT):
 			{
-				// wait for sync info?
-				elev_set_motor_direction(elev_motor_direction_t.DIRN_DOWN);
-                previousDirection = state_t.GOING_DOWN;
-				
 		
-				if(currentFloor == 0)
+				if(currentFloor != -1)
 				{
 					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 					currentState = state_t.IDLE;

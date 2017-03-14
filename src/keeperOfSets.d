@@ -57,9 +57,6 @@ void retireElevator(ubyte id)
 	debug writeln("keeper: elevator [", id, "] RETIRED");
 }
 
-//findMatch finner best egna elevator for en ordre ved å se på tilstand + floor,
-//i tilfellet det e flere mulige for oppdraget velge den den nærmeste.
-
 void addBestElevatorWithState(state_t wantedState, int wantedFloor, ref elevator_t[ubyte] candidates, ref elevator_t[ubyte] entrants)
 {
 	debug writeln("Find best suited elevator in state: ", wantedState);
@@ -80,7 +77,7 @@ void addBestElevatorWithState(state_t wantedState, int wantedFloor, ref elevator
 void keepNearestElevator(elevator_t[ubyte] entrants, int floor)
 {
 	int smallestDistance = main.nrOfFloors;
-	ubyte nearestElevatorId; 
+	ubyte nearestElevatorId = entrants.keys[0]; 
 	foreach(ubyte id, elevator; entrants) 
 	{ 
 		int distance = abs(elevator.currentFloor - floor); 
@@ -102,7 +99,7 @@ void keepNearestElevator(elevator_t[ubyte] entrants, int floor)
 void keepFurtherestElevator(elevator_t[ubyte] entrants, int floor)
 {
 	int longestDistance = 0;
-	ubyte furtherestElevatorId; 
+	ubyte furtherestElevatorId = entrants.keys[0];
 	foreach(ubyte id, elevator; entrants) 
 	{ 
 		int distance = abs(elevator.currentFloor - floor); 
@@ -121,6 +118,9 @@ void keepFurtherestElevator(elevator_t[ubyte] entrants, int floor)
 	} 
 }
 
+// TODO Skrive om denne kommentaren, om den skal være her
+//findMatch finner best egna elevator for en ordre ved å se på tilstand + floor,
+//i tilfellet det e flere mulige for oppdraget velge den den nærmeste.
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
 	if (orderDirection == button_type_t.INTERNAL)
@@ -130,31 +130,42 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 	}
 
 	elevator_t[ubyte] candidates = (cast(elevator_t[ubyte])aliveElevators).dup;
+    debug writeln("CANDIDATES: ", candidates.keys);
 	elevator_t[ubyte] entrants;
+    foreach(ubyte id, elevator; aliveElevators)
+    {
+        debug writeln("alive elev ", id, " at floor ", elevator.currentFloor);
+    }
 
 	if(orderDirection == button_type_t.DOWN)
 	{
-		foreach(int iterator; 0 .. 5)
+		foreach(int priority; 0 .. 5)
 		{
 			if(entrants.length == 1)
 			{
-                debug writelnRed("FOUND A MATCH at DOWN and iterator");
-                debug writeln(iterator - 1);
+                debug writelnRed("FOUND A MATCH at DOWN and priority");
+                debug writeln(priority - 1);
 				return entrants.keys[0];
 			}
 
-			switch(iterator)
+			switch(priority)
 			{
 				case 0:
 				{
 					foreach(ubyte id, elevator; candidates)
 					{
 						if(((elevator.currentFloor > orderFloor) && (elevator.currentState == state_t.GOING_DOWN)) 
-							|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_DOWN))
+							|| ((elevator.currentFloor == orderFloor) && (elevator.prevState ==
+                                    state_t.GOING_DOWN)))
 						{
 							entrants[id] = candidates[id];
 						}
 					}
+                    debug writeln("entrants after priority 0: ", entrants.keys);
+                    foreach(ubyte id, elevator; entrants)
+                    {
+                        debug writeln(id, " at floor: ", elevator.currentFloor);
+                    }
 					if(entrants.length > 1)
 					{
 						keepNearestElevator(entrants, orderFloor);
@@ -164,11 +175,13 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				case 1:
 				{
 					addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
+                    debug writeln("entrants after priority 1", entrants.keys);
 					break;
 				}
 				case 2:
 				{
 					addBestElevatorWithState(state_t.GOING_UP, orderFloor, candidates, entrants);
+                    debug writeln("entrants after priority 2", entrants.keys);
 					break;
 				}
 				case 3:
@@ -180,6 +193,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 							entrants[id] = candidates[id];
 						}
 					}
+                    debug writeln("entrants after priority 3", entrants.keys);
 					if(entrants.length > 1)
 					{
 						keepFurtherestElevator(entrants, orderFloor);
@@ -197,27 +211,33 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 
 	if(orderDirection == button_type_t.UP)
 	{
-		foreach(int iterator; 0 .. 5)
+		foreach(int priority; 0 .. 5)
 		{
 			if(entrants.length == 1)
 			{
-                debug writelnRed("FOUND A MATCH at UP and iterator");
-                debug writeln(iterator - 1);
+                debug writelnRed("FOUND A MATCH at UP and priority");
+                debug writeln(priority - 1);
 				return entrants.keys[0];
 			}
 
-			switch(iterator)
+			switch(priority)
 			{
 				case 0:
 				{
 					foreach(ubyte id, elevator; candidates)
 					{
 						if(((elevator.currentFloor < orderFloor) && (elevator.currentState == state_t.GOING_UP)) 
-							|| (elevator.currentFloor == orderFloor) && (elevator.prevState == state_t.GOING_UP))
+							|| ((elevator.currentFloor == orderFloor) && (elevator.prevState ==
+                                    state_t.GOING_UP)))
 						{
 							entrants[id] = candidates[id];
 						}
 					}
+                    debug writeln("entrants after priority 0", entrants.keys);
+                    foreach(ubyte id, elevator; entrants)
+                    {
+                        debug writeln(id, " at floor: ", elevator.currentFloor);
+                    }
 					if(entrants.length > 1)
 					{
 						keepNearestElevator(entrants, orderFloor);
@@ -227,11 +247,13 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				case 1:
 				{
 					addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
+                    debug writeln("entrants after priority 1", entrants.keys);
 					break;
 				}
 				case 2:
 				{
 					addBestElevatorWithState(state_t.GOING_DOWN, orderFloor, candidates, entrants);
+                    debug writeln("entrants after priority 2", entrants.keys);
 					break;
 				}
 				case 3:
@@ -243,6 +265,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 							entrants[id] = candidates[id];
 						}
 					}
+                    debug writeln("entrants after priority 3", entrants.keys);
 					if(entrants.length > 1)
 					{
 						keepFurtherestElevator(entrants, orderFloor);
@@ -263,7 +286,6 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 {
-	// TODO: check that targetID is in aliveElevators?
 	if (targetID in deadElevators)
 	{
 		// Do what? Error handling?
@@ -435,13 +457,13 @@ void keeperOfSetsThread(
 						message_t confirmingOrder;
 						confirmingOrder.header          = message_header_t.confirmOrder;
 						confirmingOrder.senderID        = messenger.getMyID();
-						// TODO: [REMOVE THIS COMMENT ?] Setting targetID to the delegators sender ID, so that the delegator knows that it was its order we now confirm
 						confirmingOrder.targetID        = receivedFromNetwork.senderID;
 						confirmingOrder.orderFloor      = receivedFromNetwork.orderFloor;
 						confirmingOrder.orderDirection  = receivedFromNetwork.orderDirection;
 						confirmingOrder.currentState    = getCurrentState();
 						confirmingOrder.currentFloor    = getPreviousValidFloor();
 						confirmingOrder.timestamp       = Clock.currTime().toUnixTime();
+                        // TODO: REMOVE PACKET LOSS! 
 						toNetworkChn.insert(confirmingOrder);
 					}
 					break;
