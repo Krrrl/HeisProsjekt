@@ -604,30 +604,36 @@ void keeperOfSetsThread(
 			message_t reDistOrder;
 			if(watchdogAlert.targetID in aliveElevators)
 			{
+                int alertedFloor = watchdogAlert.orderFloor;
+                debug writelnRed("keeper: watchdogalert at target and floor");
+                debug writeln(watchdogAlert.targetID, " ", alertedFloor);
+
 				reDistOrder.header = message_header_t.delegateOrder;
 				reDistOrder.senderID = messenger.getMyID();
 				reDistOrder.targetID = watchdogAlert.targetID;
-				reDistOrder.orderFloor = watchdogAlert.orderFloor;
+				reDistOrder.orderFloor = alertedFloor;
 				reDistOrder.timestamp = Clock.currTime().toUnixTime();
 				
-				if(aliveElevators[watchdogAlert.targetID].downQueue[reDistOrder.orderFloor])
+                debug writeln("start of ifs");
+				if(aliveElevators[watchdogAlert.targetID].downQueue[alertedFloor])
 				{
 					reDistOrder.orderDirection = button_type_t.DOWN;
 					toNetworkChn.insert(reDistOrder);
 
 				}
-				if(aliveElevators[watchdogAlert.targetID].upQueue[reDistOrder.orderFloor])
+				if(aliveElevators[watchdogAlert.targetID].upQueue[alertedFloor])
 				{
 					reDistOrder.orderDirection = button_type_t.UP;
 					toNetworkChn.insert(reDistOrder);
 
 				}
-				if(aliveElevators[watchdogAlert.targetID].internalQueue[reDistOrder.orderFloor])
+				if(aliveElevators[watchdogAlert.targetID].internalQueue[alertedFloor])
 				{
 					reDistOrder.orderDirection = button_type_t.INTERNAL;
 					toNetworkChn.insert(reDistOrder);
 
 				}
+                debug writelnRed("keeper: watchdog alert redelegated?");
 			}
 		}
 

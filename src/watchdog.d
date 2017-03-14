@@ -31,7 +31,7 @@ private watchdogTAG[ubyte] latestExpedites;
 private long[ubyte] mostRecentExpediteTime;
 
 //longest do-nothing interval allowed.
-private long confirmedTimeoutThreshold = 4;
+private long confirmedTimeoutThreshold = 10;
 
 /*
  * @brief   Thread responsible for watching the livelihood of other elevatorTAGs
@@ -104,33 +104,48 @@ void watchdogThread(
 		foreach(ubyte id, elevatorTAG; latestConfirms)
 		{
 			foreach(floor; elevatorTAG.orders)
-			if(latestExpedites[id].orders[floor] && elevatorTAG.orders[floor])
-			{
-				/* Check if there has been an expedite on a floor after the confirm for that floor */
-				if((Clock.currTime().toUnixTime() - latestExpedites[id].timestamps[floor])
-					 < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
-				{
-					elevatorTAG.orders[floor] = false;
-					latestExpedites[id].orders[floor] = false;
-				}
-			}
+            {
+                if (id in latestExpedites)
+                {
+                    if (floor in latestExpedites[id].orders)
+                    {
+                        if(latestExpedites[id].orders[floor] && elevatorTAG.orders[floor])
+                        {
+                            /* Check if there has been an expedite on a floor after the confirm for that floor */
+                            debug writeln("checking time");
+                            if (id in latestExpedites)
+                            {
+                                if((Clock.currTime().toUnixTime() - latestExpedites[id].timestamps[floor])
+                                     < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
+                                {
+                                    elevatorTAG.orders[floor] = false;
+                                    latestExpedites[id].orders[floor] = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 		}
 
 		/* Checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any */
 		foreach(ubyte id, elevatorTAG; latestConfirms)
 		{
-			foreach(floor; elevatorTAG.orders)
+			foreach(floor; elevatorTAG.orders.keys)
 			{
 				/* Check if there is a confirmed order on this floor, and if it has passed the
                  * confirmedTimeoutThreshold without a repleneshing action in between */
 				if(elevatorTAG.orders[floor])
 				{
 					/* Checking for replenishing action */
-					if(((Clock.currTime().toUnixTime() - mostRecentConfirmTime[id]) < confirmedTimeoutThreshold)
-						|| ((Clock.currTime().toUnixTime() - mostRecentExpediteTime[id]) < confirmedTimeoutThreshold))
-					{
-						break;
-					}
+                    if ((id in mostRecentConfirmTime) && (id in mostRecentConfirmTime))
+                    {
+                        if(((Clock.currTime().toUnixTime() - mostRecentConfirmTime[id]) < confirmedTimeoutThreshold)
+                            || ((Clock.currTime().toUnixTime() - mostRecentExpediteTime[id]) < confirmedTimeoutThreshold))
+                        {
+                            break;
+                        }
+                    }
 
 					/* Checking for timed-out orders */
 					if((Clock.currTime().toUnixTime() - elevatorTAG.timestamps[floor]) > confirmedTimeoutThreshold)
