@@ -435,14 +435,14 @@ void syncMySet(shared int[main.nrOfFloors] internalOrders)
 ubyte highestEligableID(ubyte senderID)
 {
 	ubyte tempID = 0;
-	bool[ubyte] eligableElevators = aliveElevators.dup;
+	elevator_t[ubyte] eligableElevators = (cast(elevator_t[ubyte])aliveElevators).dup;
 
-	/* senderID from eligable elevators */
-	eligableElevators = remove(eligableElevators[senderID]);
+	/* Remove senderID from eligable elevators */
+	eligableElevators.remove(senderID);
 
 	foreach (elevator; eligableElevators)
 	{
-		if (tempID < elevator.ID)
+		if (elevator.ID < tempID)
 		{
 			tempID = elevator.ID;
 		}
