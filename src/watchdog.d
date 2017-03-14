@@ -103,24 +103,22 @@ void watchdogThread(
 		/* Clearing old confirms against recent expedites */
 		foreach(ubyte id, elevatorTAG; latestConfirms)
 		{
-			foreach(floor; elevatorTAG.orders)
+			foreach(floor; elevatorTAG.orders.keys)
             {
                 if (id in latestExpedites)
                 {
+                    //debug writelnRed("id in exped");
                     if (floor in latestExpedites[id].orders)
                     {
                         if(latestExpedites[id].orders[floor] && elevatorTAG.orders[floor])
                         {
-                            /* Check if there has been an expedite on a floor after the confirm for that floor */
-                            if (id in latestExpedites)
+                        /* Check if there has been an expedite on a floor after the confirm for that floor */
+                            if((Clock.currTime().toUnixTime() - latestExpedites[id].timestamps[floor])
+                                 < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
                             {
-                                if((Clock.currTime().toUnixTime() - latestExpedites[id].timestamps[floor])
-                                     < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
-                                {
-                                    debug writelnRed("cleared confirm yo");
-                                    elevatorTAG.orders[floor] = false;
-                                    latestExpedites[id].orders[floor] = false;
-                                }
+                                debug writelnYellow("watchdog: cleared confirm with expedite");
+                                elevatorTAG.orders[floor] = false;
+                                latestExpedites[id].orders[floor] = false;
                             }
                         }
                     }
@@ -135,6 +133,8 @@ void watchdogThread(
 			{
 				/* Check if there is a confirmed order on this floor, and if it has passed the
                  * confirmedTimeoutThreshold without a repleneshing action in between */
+                //debug writeln(elevatorTAG);
+                //debug writeln(floor);
 				if(elevatorTAG.orders[floor])
 				{
 					/* Checking for replenishing action */
