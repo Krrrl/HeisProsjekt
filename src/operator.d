@@ -300,6 +300,7 @@ void operatorThread(
 					{
 						elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 						currentState = state_t.IDLE;
+						debug writelnYellow("Operator: now IDLE");
 						break;
 					}
 				}
@@ -307,34 +308,30 @@ void operatorThread(
 			}
 			case (state_t.GOING_UP):
 			{
-				debug writelnYellow("Operator: now GOING_UP");
-
 				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					previousDirection = state_t.GOING_UP;
 					currentState = state_t.FLOORSTOP;
+					debug writelnYellow("Operator: now FLOORSTOP");
 				}
 				break;
 			}
 			case (state_t.GOING_DOWN):
 			{
-				debug writelnYellow("Operator: now GOING_DOWN");
-
 				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					previousDirection = state_t.GOING_DOWN;
 					currentState = state_t.FLOORSTOP;
+					debug writelnYellow("Operator: now FLOORSTOP");
 				}
 				break;
 			}
 			case (state_t.FLOORSTOP):
 			{
-				debug writelnYellow("Operator: now FLOORSTOP");
-
 				stopAtFloor();
 				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 
@@ -351,26 +348,28 @@ void operatorThread(
 					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_STOP)
 					{
 						currentState = state_t.IDLE;
+						debug writelnYellow("Operator: now IDLE");
 					}
 					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_DOWN)
 					{
 						currentState = state_t.GOING_DOWN;
+						debug writelnYellow("Operator: now GOING_DOWN");
 					}
 					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_UP)
 					{
 						currentState = state_t.GOING_UP;
+						debug writelnYellow("Operator: now GOING_UP");
 					}
 				}
 				break;
 			}
 			case (state_t.IDLE):
 			{
-				debug writelnYellow("Operator: now IDLE");
-
                 /* Check for new orders on the same floor */
 				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
 					currentState = state_t.FLOORSTOP;
+					debug writelnYellow("Operator: now FLOORSTOP");
 					break;
 				}
 
@@ -380,11 +379,13 @@ void operatorThread(
 				{
 					elev_set_motor_direction(directionToNextOrder);
 					currentState = state_t.GOING_UP;
+					debug writelnYellow("Operator: now GOING_UP");
 				}
 				if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
 				{
 					elev_set_motor_direction(directionToNextOrder);
 					currentState = state_t.GOING_DOWN;
+					debug writelnYellow("Operator: now GOING_DOWN");
 				}
 				break;
 			}
