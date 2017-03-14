@@ -119,6 +119,7 @@ message_t createSyncRequest()
 void messengerThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
+	ref shared NonBlockingChannel!message_t orderConfirmationsReceivedChn,
 	ref shared NonBlockingChannel!PeerList peerListChn,
 	)
 {
@@ -154,6 +155,11 @@ void messengerThread(
 			debug writeln("messenger: received order from network");
 			debug writeln(" >> ", orderFromNetwork);
 			ordersToThisElevatorChn.insert(orderFromNetwork);
+
+			if(orderFromNetwork.header == message_header_t.confirmOrder)
+			{
+				orderConfirmationsReceivedChn.insert(orderFromNetwork);
+			}
 
 		},
 			(PeerList list)

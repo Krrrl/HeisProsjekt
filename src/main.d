@@ -32,6 +32,8 @@ void main(string[] args)
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
 	/* channel for putting orders that need to be delegated */
 	shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
+	/* channel for putting received order confirmations between delegator and messenger */
+	shared NonBlockingChannel!message_t orderConfirmationsReceivedChn = new NonBlockingChannel!message_t;
 	/* channel for passing peer list to Keeper */
 	shared NonBlockingChannel!PeerList peerListChn = new NonBlockingChannel!PeerList;
 	/* channel for updating the operator on this elevators current orders*/
@@ -77,6 +79,7 @@ void main(string[] args)
 		&messengerThread,
 		toNetworkChn,
 		ordersToThisElevatorChn,
+		orderConfirmationsReceivedChn,
 		peerListChn);
 
 	/*watchdogTid = spawnLinked(
@@ -96,8 +99,12 @@ void main(string[] args)
 
 	delegatorTid = spawnLinked(
 		&delegatorThread,
-		ordersToThisElevatorChn,
 		toNetworkChn,
+		ordersToBeDelegatedChn,
+		orderConfirmationsReceivedChn);
+
+	buttonCheckerThread = spawnLinked(
+		&buttonCheckerThread,
 		ordersToBeDelegatedChn);
 
 	while (true)
