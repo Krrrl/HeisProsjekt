@@ -41,7 +41,6 @@ private int[][button_type_t] ordersForThisElevator;
 
 state_t getCurrentState()
 {
-    //return previousDirection;
 	return currentState;
 }
 
@@ -213,6 +212,17 @@ bool shouldStopToExpediteOnFloor(int floor)
 
 elev_motor_direction_t getDirectionToNextOrder(int floor)
 {
+    if (floor == -1)
+    {
+        if (currentState == state_t.GOING_UP)
+        {
+            return elev_motor_direction_t.DIRN_UP;
+        }
+        else if (currentState == state_t.GOING_DOWN)
+        {
+            return elev_motor_direction_t.DIRN_DOWN;
+        }
+    }
 	int[] allOrders = ordersForThisElevator[button_type_t.UP] ~ordersForThisElevator[button_type_t.DOWN] ~ordersForThisElevator[button_type_t.INTERNAL];
 
 	if (allOrders.length)
@@ -311,17 +321,10 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
-				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
-                if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
+                if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
                 {
-                    elev_set_motor_direction(directionToNextOrder);
-					previousDirection = state_t.GOING_UP;
-                    currentState = state_t.GOING_DOWN;
-                }
-                if (directionToNextOrder == elev_motor_direction_t.DIRN_STOP)
-                {
-                    elev_set_motor_direction(directionToNextOrder);
-					previousDirection = state_t.GOING_UP;
+                    elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                    previousDirection = state_t.GOING_UP;
                     currentState = state_t.IDLE;
                 }
 				break;
@@ -336,17 +339,10 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
-				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
-                if (directionToNextOrder == elev_motor_direction_t.DIRN_UP)
+                if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
                 {
-                    elev_set_motor_direction(directionToNextOrder);
-					previousDirection = state_t.GOING_DOWN;
-                    currentState = state_t.GOING_UP;
-                }
-                if (directionToNextOrder == elev_motor_direction_t.DIRN_STOP)
-                {
-                    elev_set_motor_direction(directionToNextOrder);
-					previousDirection = state_t.GOING_DOWN;
+                    elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                    previousDirection = state_t.GOING_DOWN;
                     currentState = state_t.IDLE;
                 }
 				break;
@@ -354,7 +350,7 @@ void operatorThread(
 			case (state_t.FLOORSTOP):
 			{
 				/* Check for new orders, restarts door timer */
-				if (shouldStopToExpediteOnFloor(previousValidFloor))
+				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					timeAtFloorStop = Clock.currTime.toUnixTime();
