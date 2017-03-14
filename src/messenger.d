@@ -79,7 +79,7 @@ const Duration heartbeatPeriod = dur!"msecs"(300);
 
 private shared ubyte _myID = 0;
 private PeerList peerList;
-private Duration heartbeatTime;
+private MonoTime heartbeatTime;
 
 ubyte getMyID()
 {
@@ -112,11 +112,6 @@ message_t createSyncRequest()
 
 /*
  * @brief   Thread responsible for passing messages between network module and remaining modules
- * @details xxx
- *
- * @param toNetworkChn: channel directed to external network
- * @param toElevatorChn: channel directed to this elevator TODO: check if names correspond to use
- * @param elevatorID: the ID of this elevator
  */
 void messengerThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
@@ -139,11 +134,11 @@ void messengerThread(
     message_t heartbeat;
     heartbeat.header = message_header_t.heartbeat;
     heartbeat.senderID = getMyID();
-    heartbeatTime = Clock.currTime().fracSecs();
+    heartbeatTime = MonoTime.currTime;
 
 	while (true)
 	{
-        /* Pass orders to network, but filter some */
+        /* Pass orders to network, but route internal delegates to me */
 		if (toNetworkChn.extract(receivedToNetworkOrder))
 		{
 			if ( (receivedToNetworkOrder.header == message_header_t.delegateOrder)
@@ -185,10 +180,11 @@ void messengerThread(
 		}
 			);
         
-        /* Send heartbeat */
-        if (heartbeatTime < heartbeatTime + heartbeatPeriod)
+        /* Send heartbeat every heartbeatPeriod */
+                
+        if (MonoTime.currTime - heartbeatTime  > heartbeatPeriod)
         {
-            heartbeatTime = Clock.currTime().fracSecs();
+            heartbeatTime = MonoTime.currTime;
             heartbeat.timestamp = Clock.currTime().toUnixTime();
             heartbeat.currentState = getCurrentState();
             heartbeat.currentFloor = getPreviousValidFloor();

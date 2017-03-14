@@ -71,7 +71,6 @@ void delegatorThread(
 
 	while (true)
 	{
-
 		/* Delegate new orders */
 		message_t newOrder;
 		message_t confirmationReceived;
