@@ -447,6 +447,7 @@ ubyte highestID()
 void keeperOfSetsThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
+	ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
 	ref shared NonBlockingChannel!message_t watchdogAlertChn,
 	ref shared NonBlockingChannel!orderList_t operatorsOrdersChn,

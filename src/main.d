@@ -70,6 +70,7 @@ void main(string[] args)
 		&keeperOfSetsThread,
 		toNetworkChn,
 		ordersToThisElevatorChn,
+		ordersToBeDelegatedChn,
 		watchdogFeedChn,
 		watchdogAlertChn,
 		operatorsOrdersChn,
