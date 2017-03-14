@@ -294,15 +294,13 @@ void operatorThread(
 
 				elev_set_motor_direction(elev_motor_direction_t.DIRN_DOWN);
 				
-				while(1)
+		
+				if(currentFloor == 0)
 				{
-					if(currentFloor == 0)
-					{
-						elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-						currentState = state_t.IDLE;
-						debug writelnYellow("Operator: now IDLE");
-						break;
-					}
+					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+					currentState = state_t.IDLE;
+					debug writelnYellow("Operator: now IDLE");
+					break;
 				}
 				break;
 			}
