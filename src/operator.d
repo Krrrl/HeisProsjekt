@@ -340,18 +340,21 @@ void operatorThread(
 				if (Clock.currTime.toUnixTime() > (timeAtFloorStop + stopDuration))
 				{
 					elev_set_door_open_lamp(0);
-					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_STOP)
+                    elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
+					if(directionToNextOrder == elev_motor_direction_t.DIRN_STOP)
 					{
 						currentState = state_t.IDLE;
 						debug writelnYellow("Operator: now IDLE");
 					}
-					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_DOWN)
+					if(directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
 					{
+                        elev_set_motor_direction(directionToNextOrder);
 						currentState = state_t.GOING_DOWN;
 						debug writelnYellow("Operator: now GOING_DOWN");
 					}
-					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_UP)
+					if(directionToNextOrder == elev_motor_direction_t.DIRN_UP)
 					{
+                        elev_set_motor_direction(directionToNextOrder);
 						currentState = state_t.GOING_UP;
 						debug writelnYellow("Operator: now GOING_UP");
 					}
