@@ -65,6 +65,7 @@ void watchdogThread(
             long timestamp = receivedFromKeeper.timestamp;
 			switch(receivedFromKeeper.header)
 			{
+                /* Update  */
 				case message_header_t.confirmOrder:
 				{
                     if (senderID !in latestConfirms)
@@ -79,6 +80,7 @@ void watchdogThread(
 					break;
 				}
 
+                /*   */
 				case message_header_t.expediteOrder:
 				{
                     if (senderID !in latestExpedites)
@@ -137,6 +139,13 @@ void watchdogThread(
 						orderAlert.header = message_header_t.watchdogAlert;
 						orderAlert.targetID = id;
 						orderAlert.orderFloor = floor;
+
+                        debug writelnRed("watchdog: ALERTING A TIMEOUT");
+                        debug writeln(orderAlert);
+
+                        /* Remove tracking */
+                        elevatorTAG.orders[floor] = false;
+					    latestExpedites[id].orders[floor] = false;
 						watchdogAlertChn.insert(orderAlert);
 					}
 				}

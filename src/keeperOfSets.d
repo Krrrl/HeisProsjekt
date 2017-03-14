@@ -431,9 +431,7 @@ void keeperOfSetsThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
-
 	ref shared NonBlockingChannel!message_t watchdogAlertChn,
-
 	ref shared NonBlockingChannel!orderList_t operatorsOrdersChn,
 	ref shared NonBlockingChannel!PeerList peerListChn
 	)
@@ -445,15 +443,16 @@ void keeperOfSetsThread(
 
 	while (true)
 	{
+        /* Check for incoming orders */
 		if (ordersToThisElevatorChn.extract(receivedFromNetwork))
 		{
 			switch (receivedFromNetwork.header)
 			{
+                /* Confirm any delegations */
 				case message_header_t.delegateOrder:
 				{
 					if (receivedFromNetwork.targetID == messenger.getMyID())
 					{
-						/* Confirm order */
 						message_t confirmingOrder;
 						confirmingOrder.header          = message_header_t.confirmOrder;
 						confirmingOrder.senderID        = messenger.getMyID();
@@ -472,6 +471,7 @@ void keeperOfSetsThread(
 					break;
 				}
 
+                /* Triggers for confirmations */
 				case message_header_t.confirmOrder:
 				{
 					/* Add to senders lists */
@@ -492,11 +492,13 @@ void keeperOfSetsThread(
 							1);
 					}
 
+                    /* Notify watchdog */
 					watchdogFeedChn.insert(receivedFromNetwork);
 
 					break;
 				}
 
+                /* Triggers for expeditions */
 				case message_header_t.expediteOrder:
 				{
 					/* Remove from elevators lists */
@@ -526,11 +528,13 @@ void keeperOfSetsThread(
 							0);
 					}
 
+                    /* Notify watchdog*/
 					watchdogFeedChn.insert(receivedFromNetwork);
 
 					break;
 				}
 
+                /* Give revived elevators their old internal orders */
 				case message_header_t.syncRequest:
 				{
 					debug writeln("keeper: received sync request");
@@ -543,6 +547,7 @@ void keeperOfSetsThread(
 					break;
 				}
 
+                /* Add any old internal orders */
 				case message_header_t.syncInfo:
 				{
 					if (messenger.getMyID() == receivedFromNetwork.targetID)
@@ -553,6 +558,7 @@ void keeperOfSetsThread(
 					break;
 				}
 
+                /* Refresh states of elevators */
 				case message_header_t.heartbeat:
 				{
 					updateHeartbeat(receivedFromNetwork.senderID,
@@ -568,7 +574,7 @@ void keeperOfSetsThread(
 			}
 		}
 
-		//check if the watchdog has picked up any timeouts
+		/* Check if the watchdog has picked up any timeouts */
 		if(watchdogAlertChn.extract(watchdogAlert))
 		{
 			message_t reDistOrder;
@@ -580,7 +586,7 @@ void keeperOfSetsThread(
 				reDistOrder.orderFloor = watchdogAlert.orderFloor;
 				reDistOrder.timestamp = Clock.currTime().toUnixTime();
 				
-				if(aliveElevators[watchdogAlert.targetID].downQueue)
+				if(aliveElevators[watchdogAlert.targetID].downQueue[orderFloor])
 				{
 					reDistOrder.orderDirection = button_type_t.DOWN;
 					toNetworkChn.insert(reDistOrder);
@@ -601,8 +607,7 @@ void keeperOfSetsThread(
 			}
 		}
 
-
-		/* Update lists of alive and inactive elevators */
+		/* Update lists of alive and dead elevators */
 		PeerList extractedPeerList = PeerList();
 		if (peerListChn.extract(extractedPeerList))
 		{
@@ -614,9 +619,12 @@ void keeperOfSetsThread(
 					createElevator(id);
 			}
 			foreach (id; aliveElevators.byKey)
+            {
 				if (!canFind(extractedPeerList.peers, id))
+                {
 					retireElevator(id);
-
+                }
+            }
 			debug writeln("keeper: alive ", aliveElevators.keys);
 			debug writeln("keeper: inactive ", deadElevators.keys);
 		}
