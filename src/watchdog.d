@@ -112,12 +112,12 @@ void watchdogThread(
                         if(latestExpedites[id].orders[floor] && elevatorTAG.orders[floor])
                         {
                             /* Check if there has been an expedite on a floor after the confirm for that floor */
-                            debug writeln("checking time");
                             if (id in latestExpedites)
                             {
                                 if((Clock.currTime().toUnixTime() - latestExpedites[id].timestamps[floor])
                                      < (Clock.currTime().toUnixTime()) - elevatorTAG.timestamps[floor])
                                 {
+                                    debug writelnRed("cleared confirm yo");
                                     elevatorTAG.orders[floor] = false;
                                     latestExpedites[id].orders[floor] = false;
                                 }

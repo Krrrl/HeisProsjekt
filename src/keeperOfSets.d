@@ -615,24 +615,36 @@ void keeperOfSetsThread(
 				reDistOrder.timestamp = Clock.currTime().toUnixTime();
 				
                 debug writeln("start of ifs");
-				if(aliveElevators[watchdogAlert.targetID].downQueue[alertedFloor])
-				{
-					reDistOrder.orderDirection = button_type_t.DOWN;
-					toNetworkChn.insert(reDistOrder);
+                if (alertedFloor in aliveElevators[watchdogAlert.targetID].downQueue)
+                {
+                    if(aliveElevators[watchdogAlert.targetID].downQueue[alertedFloor])
+                    {
+                        reDistOrder.orderDirection = button_type_t.DOWN;
+                        debug writelnRed("keeper: watchdog alert down");
+                        toNetworkChn.insert(reDistOrder);
 
-				}
-				if(aliveElevators[watchdogAlert.targetID].upQueue[alertedFloor])
-				{
-					reDistOrder.orderDirection = button_type_t.UP;
-					toNetworkChn.insert(reDistOrder);
+                    }
+                }
+                if (alertedFloor in aliveElevators[watchdogAlert.targetID].upQueue)
+                {
+                    if(aliveElevators[watchdogAlert.targetID].upQueue[alertedFloor])
+                    {
+                        reDistOrder.orderDirection = button_type_t.UP;
+                        debug writelnRed("keeper: watchdog alert up");
+                        toNetworkChn.insert(reDistOrder);
 
-				}
-				if(aliveElevators[watchdogAlert.targetID].internalQueue[alertedFloor])
-				{
-					reDistOrder.orderDirection = button_type_t.INTERNAL;
-					toNetworkChn.insert(reDistOrder);
+                    }
+                }
+                if (alertedFloor in aliveElevators[watchdogAlert.targetID].internalQueue)
+                {
+                    if(aliveElevators[watchdogAlert.targetID].internalQueue[alertedFloor])
+                    {
+                        reDistOrder.orderDirection = button_type_t.INTERNAL;
+                        debug writelnRed("keeper: watchdog alert internal");
+                        toNetworkChn.insert(reDistOrder);
 
-				}
+                    }
+                }
                 debug writelnRed("keeper: watchdog alert redelegated?");
 			}
 		}
