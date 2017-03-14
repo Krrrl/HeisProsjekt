@@ -269,6 +269,8 @@ void operatorThread(
 	orderList_t ordersUpdate;
 	updateOrdersForThisElevator(ordersUpdate);
 
+	debug writelnYellow("Operator: now INIT");
+
 	while (true)
 	{
 		/* Check for update in orders for this elevator */
@@ -289,9 +291,7 @@ void operatorThread(
 		{
 			case (state_t.INIT):
 			{
-				debug writelnYellow("Operator: now INIT");
 				// wait for sync info?
-
 				elev_set_motor_direction(elev_motor_direction_t.DIRN_DOWN);
 				
 		
@@ -330,9 +330,6 @@ void operatorThread(
 			}
 			case (state_t.FLOORSTOP):
 			{
-				stopAtFloor();
-				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-
 				/* Check for new orders, restarts door timer */
 				if (shouldStopToExpediteOnFloor(previousValidFloor))
 				{
@@ -366,6 +363,8 @@ void operatorThread(
                 /* Check for new orders on the same floor */
 				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
+					stopAtFloor();
+					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 					break;
