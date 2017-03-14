@@ -158,13 +158,14 @@ void messengerThread(
             {
                 debug writeln("messenger: received order from network");
                 debug writeln(" >> ", orderFromNetwork);
-                ordersToThisElevatorChn.insert(orderFromNetwork);
             }
 
 			if(orderFromNetwork.header == message_header_t.confirmOrder)
 			{
 				orderConfirmationsReceivedChn.insert(orderFromNetwork);
 			}
+
+            ordersToThisElevatorChn.insert(orderFromNetwork);
 
 		},
 			(PeerList list)
