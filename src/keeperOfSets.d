@@ -313,28 +313,34 @@ void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 		aliveElevators[targetID] = elevator_t();
 	switch (orderDirection)
 	{
-	case button_type_t.DOWN:
-	{
-		if (orderFloor !in aliveElevators[targetID].downQueue)
-			aliveElevators[targetID].downQueue[orderFloor] = true;
-		break;
-	}
-	case button_type_t.UP:
-	{
-		if (orderFloor !in aliveElevators[targetID].upQueue)
-			aliveElevators[targetID].upQueue[orderFloor] = true;
-		break;
-	}
-	case button_type_t.INTERNAL:
-	{
-		if (orderFloor !in aliveElevators[targetID].internalQueue)
-			aliveElevators[targetID].internalQueue[orderFloor] = true;
-		break;
-	}
-	default:
-	{
-		break;
-	}
+		case button_type_t.DOWN:
+		{
+			if (orderFloor !in aliveElevators[targetID].downQueue)
+			{
+				aliveElevators[targetID].downQueue[orderFloor] = true;
+			}
+			break;
+		}
+		case button_type_t.UP:
+		{
+			if (orderFloor !in aliveElevators[targetID].upQueue)
+			{
+				aliveElevators[targetID].upQueue[orderFloor] = true;
+			}
+			break;
+		}
+		case button_type_t.INTERNAL:
+		{
+			if (orderFloor !in aliveElevators[targetID].internalQueue)
+			{
+				aliveElevators[targetID].internalQueue[orderFloor] = true;
+			}
+			break;
+		}
+		default:
+		{
+			break;
+		}
 	}
 }
 

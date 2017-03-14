@@ -222,30 +222,30 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 		switch (previousDirection)
 		{
 		default:
-		case (state_t.GOING_UP):
-		{
-			if (allOrders.dup[$ - 1] > floor)
-            {
-				return elev_motor_direction_t.DIRN_UP;
-            }
-			if (allOrders.dup[0] < floor)
-            {
-				return elev_motor_direction_t.DIRN_DOWN;
-            }
-			break;
-		}
-		case (state_t.GOING_DOWN):
-		{
-			if (allOrders[0] < floor)
-            {
-				return elev_motor_direction_t.DIRN_DOWN;
-            }
-			if (allOrders[$ - 1] > floor)
-            {
-				return elev_motor_direction_t.DIRN_UP;
-            }
-			break;
-		}
+			case (state_t.GOING_UP):
+			{
+				if (allOrders.dup[$ - 1] > floor)
+      	    	{
+					return elev_motor_direction_t.DIRN_UP;
+        	    }
+				if (allOrders.dup[0] < floor)
+            	{
+					return elev_motor_direction_t.DIRN_DOWN;
+            	}
+				break;
+			}
+			case (state_t.GOING_DOWN):
+			{
+				if (allOrders[0] < floor)
+            	{
+					return elev_motor_direction_t.DIRN_DOWN;
+            	}
+				if (allOrders[$ - 1] > floor)
+            	{
+					return elev_motor_direction_t.DIRN_UP;
+            	}
+				break;
+			}
 		}
 	}
 	return elev_motor_direction_t.DIRN_STOP;
