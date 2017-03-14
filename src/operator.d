@@ -82,6 +82,35 @@ message_t createExpediteOrder(int floor)
 	return newExpediteOrder;
 }
 
+ulong findElementPosition(ref int[] arr, int value)
+{
+    foreach(i; 0..arr.length)
+    {
+        if (arr[i] == value)
+        {
+            return i;
+        }
+    }
+    return 0;
+}
+
+void removeFromThisElevatorsOrders(int floor)
+{
+    debug writeln("operator: removing from own lists");
+    foreach(button; button_types_t())
+    {
+        if (canFind(ordersForThisElevator[button].dup, floor))
+        {
+            debug writeln("here be removing");
+            debug writeln(ordersForThisElevator[button]);
+            debug writeln(findElementPosition(ordersForThisElevator[button], floor));
+            remove(ordersForThisElevator[button],
+                    findElementPosition(ordersForThisElevator[button], floor));
+            debug writeln("here be removed");
+        }
+    }
+}
+
 bool shouldStopToExpediteOnFloor(int floor)
 {
 	int[] allOrders = ordersForThisElevator[button_type_t.UP] ~
@@ -98,16 +127,7 @@ bool shouldStopToExpediteOnFloor(int floor)
     {
 		if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
         {
-            remove(ordersForThisElevator[button_type_t.INTERNAL],
-                    find(ordersForThisElevator[button_type_t.INTERNAL].dup,floor));
-            remove(ordersForThisElevator[button_type_t.UP],
-                    find(ordersForThisElevator[button_type_t.UP],floor));
-            remove(ordersForThisElevator[button_type_t.DOWN],
-                    find(ordersForThisElevator[button_type_t.DOWN],floor));
-
-            //ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
-            //ordersForThisElevator[button_type_t.UP].remove(floor);
-            //ordersForThisElevator[button_type_t.DOWN].remove(floor);
+            removeFromThisElevatorsOrders(floor);
 			return true;
         }
     }
@@ -121,9 +141,7 @@ bool shouldStopToExpediteOnFloor(int floor)
             {
 				if (canFind(ordersForThisElevator[button_type_t.UP], floor))
                 {
-                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
-                    ordersForThisElevator[button_type_t.UP].remove(floor);
-                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
+                    removeFromThisElevatorsOrders(floor);
 					return true;
                 }
             }
@@ -144,9 +162,7 @@ bool shouldStopToExpediteOnFloor(int floor)
                 }
 				if (highestDownOrder == floor && highestDownOrder > highestNonDownOrder)
                 {
-                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
-                    ordersForThisElevator[button_type_t.UP].remove(floor);
-                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
+                    removeFromThisElevatorsOrders(floor);
 					return true;
                 }
 			}
@@ -158,9 +174,7 @@ bool shouldStopToExpediteOnFloor(int floor)
             {
 				if (canFind(ordersForThisElevator[button_type_t.DOWN], floor))
                 {
-                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
-                    ordersForThisElevator[button_type_t.UP].remove(floor);
-                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
+                    removeFromThisElevatorsOrders(floor);
 					return true;
                 }
             }
@@ -181,9 +195,7 @@ bool shouldStopToExpediteOnFloor(int floor)
                 }
 				if (lowestUpOrder == floor && lowestUpOrder <= lowestNonUpOrder)
                 {
-                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
-                    ordersForThisElevator[button_type_t.UP].remove(floor);
-                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
+                    removeFromThisElevatorsOrders(floor);
 					return true;
                 }
 			}
@@ -297,16 +309,17 @@ void operatorThread(
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					previousDirection = state_t.GOING_UP;
 				}
-
-				elev_motor_direction_t correctDirection =
-					getDirectionToNextOrder(previousValidFloor);
-				if (correctDirection != elev_motor_direction_t.DIRN_UP)
-				{
-					debug writelnRed("operator: was going the wrong way");
-					debug writelnPurple("operator: IDLE");
-					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-					currentState = state_t.IDLE;
-				}
+                else {
+                    elev_motor_direction_t correctDirection =
+                        getDirectionToNextOrder(previousValidFloor);
+                    if (correctDirection != elev_motor_direction_t.DIRN_UP)
+                    {
+                        debug writelnRed("operator: was going the wrong way");
+                        debug writelnPurple("operator: IDLE");
+                        elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                        currentState = state_t.IDLE;
+                    }
+                }
 				break;
 			}
 			case (state_t.GOING_DOWN):
@@ -317,16 +330,18 @@ void operatorThread(
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					previousDirection = state_t.GOING_DOWN;
 				}
-
-				elev_motor_direction_t correctDirection =
-					getDirectionToNextOrder(previousValidFloor);
-				if (correctDirection != elev_motor_direction_t.DIRN_DOWN)
-				{
-					debug writelnRed("operator: was going the wrong way");
-					debug writelnPurple("operator: IDLE");
-					elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-					currentState = state_t.IDLE;
-				}
+                else
+                {
+                    elev_motor_direction_t correctDirection =
+                        getDirectionToNextOrder(previousValidFloor);
+                    if (correctDirection != elev_motor_direction_t.DIRN_DOWN)
+                    {
+                        debug writelnRed("operator: was going the wrong way");
+                        debug writelnPurple("operator: IDLE");
+                        elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                        currentState = state_t.IDLE;
+                    }
+                }
 				break;
 			}
 			case (state_t.FLOORSTOP):

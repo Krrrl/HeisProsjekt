@@ -29,34 +29,36 @@ const private int timeoutCounterThreshold = 5;
  */
 
 void buttonCheckerThread(
-        ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn
-        )
+        ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn)
 {
 	/* Construct prevState for all buttons */
 	bool[main.nrOfFloors][main.nrOfButtons] buttonPrevMatrix = false;
 
 	/* Check button states and register new presses */
 	// TODO: Should this be in a seperate thread? We don't want to miss any button presses dues to processing new orders
-	foreach (floor; 0..main.nrOfFloors)
-	{
-		foreach (buttonType; button_types_t())
-		{
-			bool buttonState        = cast(bool)(elev_get_button_signal(cast(elev_button_type_t)(buttonType), floor));
-			bool prevButtonState    = buttonPrevMatrix[cast(int)(buttonType)][floor];
+    while (true)
+    {
+        foreach (floor; 0..main.nrOfFloors)
+        {
+            foreach (buttonType; button_types_t())
+            {
+                bool buttonState        = cast(bool)(elev_get_button_signal(cast(elev_button_type_t)(buttonType), floor));
+                bool prevButtonState    = buttonPrevMatrix[cast(int)(buttonType)][floor];
 
-			if (buttonState && !prevButtonState)
-			{
-				message_t newOrder;
-				newOrder.orderFloor     = floor;
-				newOrder.orderDirection = buttonType;
-				ordersToBeDelegatedChn.insert(newOrder);
+                if (buttonState && !prevButtonState)
+                {
+                    message_t newOrder;
+                    newOrder.orderFloor     = floor;
+                    newOrder.orderDirection = buttonType;
+                    ordersToBeDelegatedChn.insert(newOrder);
 
-				buttonPrevMatrix[cast(int)(buttonType)][floor] = true;
-			}
-			else if (!buttonState && prevButtonState)
-				buttonPrevMatrix[cast(int)(buttonType)][floor] = false;
-		}
-	}
+                    buttonPrevMatrix[cast(int)(buttonType)][floor] = true;
+                }
+                else if (!buttonState && prevButtonState)
+                    buttonPrevMatrix[cast(int)(buttonType)][floor] = false;
+            }
+        }
+    }
 }
 
 void delegatorThread(
