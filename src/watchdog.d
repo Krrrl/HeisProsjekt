@@ -31,7 +31,7 @@ private watchdogTAG[ubyte] latestExpedites;
 private long[ubyte] mostRecentExpediteTime;
 
 //longest do-nothing interval allowed.
-private long confirmedTimeoutThreshold = 2;
+private long confirmedTimeoutThreshold = 10;
 
 /*
  * @brief   Thread responsible for watching the livelihood of other elevatorTAGs
@@ -129,6 +129,7 @@ void watchdogThread(
 		/* Checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any */
 		foreach(ubyte id, elevatorTAG; latestConfirms)
 		{
+            bool replenished = false;
 			foreach(floor; elevatorTAG.orders.keys)
 			{
 				/* Check if there is a confirmed order on this floor, and if it has passed the
@@ -143,26 +144,29 @@ void watchdogThread(
                         if(((Clock.currTime().toUnixTime() - mostRecentConfirmTime[id]) < confirmedTimeoutThreshold)
                             || ((Clock.currTime().toUnixTime() - mostRecentExpediteTime[id]) < confirmedTimeoutThreshold))
                         {
-                            break;
+                            replenished = true;
                         }
                     }
 
-					/* Checking for timed-out orders */
-					if((Clock.currTime().toUnixTime() - elevatorTAG.timestamps[floor]) > confirmedTimeoutThreshold)
-					{
-						message_t orderAlert;
-						orderAlert.header = message_header_t.watchdogAlert;
-						orderAlert.targetID = id;
-						orderAlert.orderFloor = floor;
+					/* Checking for timed-out orders if not replenished */
+                    if (!replenished)
+                    {
+                        if((Clock.currTime().toUnixTime() - elevatorTAG.timestamps[floor]) > confirmedTimeoutThreshold)
+                        {
+                            message_t orderAlert;
+                            orderAlert.header = message_header_t.watchdogAlert;
+                            orderAlert.targetID = id;
+                            orderAlert.orderFloor = floor;
 
-                        debug writelnRed("watchdog: ALERTING A TIMEOUT");
-                        debug writeln(orderAlert);
+                            debug writelnRed("watchdog: ALERTING A TIMEOUT");
+                            debug writeln(orderAlert);
 
-                        /* Remove tracking */
-                        elevatorTAG.orders[floor] = false;
-					    latestExpedites[id].orders[floor] = false;
-						watchdogAlertChn.insert(orderAlert);
-					}
+                            /* Remove tracking */
+                            elevatorTAG.orders[floor] = false;
+                            latestExpedites[id].orders[floor] = false;
+                            watchdogAlertChn.insert(orderAlert);
+                        }
+                    }
 				}
 			}
 		}
