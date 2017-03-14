@@ -112,6 +112,10 @@ void removeFromThisElevatorsOrders(int floor)
 
 bool shouldStopToExpediteOnFloor(int floor)
 {
+	if(floor == -1)
+	{
+		return false;
+	}
 	int[] allOrders = ordersForThisElevator[button_type_t.UP] ~
 			  ordersForThisElevator[button_type_t.DOWN] ~
 			  ordersForThisElevator[button_type_t.INTERNAL];
@@ -340,6 +344,7 @@ void operatorThread(
                     elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
 					if(directionToNextOrder == elev_motor_direction_t.DIRN_STOP)
 					{
+						elev_set_motor_direction(directionToNextOrder);
 						currentState = state_t.IDLE;
 						debug writelnYellow("Operator: now IDLE");
 					}
