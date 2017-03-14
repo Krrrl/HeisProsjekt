@@ -455,9 +455,8 @@ void keeperOfSetsThread(
 						receivedFromNetwork.orderDirection,
 						receivedFromNetwork.orderFloor);
 
-					/* Update operators orders if the new order is ours */
-					if (receivedFromNetwork.senderID == messenger.getMyID())
-						operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+					/* Update operators orders */
+					operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
 
 					/* Set light if order is local-internal or external */
 					if (receivedFromNetwork.targetID == messenger.getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)

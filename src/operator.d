@@ -34,7 +34,7 @@ const int stopDuration                  = 3;
 private int currentFloor                = 0;
 private shared int previousValidFloor   = -1;
 private shared state_t currentState     = state_t.INIT;
-private state_t previousDirection       = state_t.INIT;
+private state_t previousDirection;
 private long timeAtFloorStop            = 0;
 
 private int[][button_type_t] ordersForThisElevator;
@@ -130,7 +130,7 @@ bool shouldStopToExpediteOnFloor(int floor)
         }
     }
 
-	switch (currentState)
+	switch (previousDirection)
 	{
 		case (state_t.GOING_UP):
 		{
@@ -197,11 +197,6 @@ bool shouldStopToExpediteOnFloor(int floor)
 					return true;
                 }
 			}
-			return false;
-		}
-		case (state_t.FLOORSTOP):
-		{
-			//TODO:
 			return false;
 		}
 		default:
@@ -293,6 +288,7 @@ void operatorThread(
 			{
 				// wait for sync info?
 				elev_set_motor_direction(elev_motor_direction_t.DIRN_DOWN);
+                previousDirection = state_t.GOING_DOWN;
 				
 		
 				if(currentFloor == 0)
