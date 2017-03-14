@@ -20,7 +20,6 @@ import main,
        watchdog,
        iolib;
 
-
 enum state_t
 {
 	GOING_UP        = 0,    // casts to button_type_t UP
@@ -104,8 +103,9 @@ void removeFromThisElevatorsOrders(int floor)
             debug writeln("here be removing");
             debug writeln(ordersForThisElevator[button]);
             debug writeln(findElementPosition(ordersForThisElevator[button], floor));
-            remove(ordersForThisElevator[button],
+            ordersForThisElevator[button] = remove(ordersForThisElevator[button],
                     findElementPosition(ordersForThisElevator[button], floor));
+            debug writeln(ordersForThisElevator[button]);
             debug writeln("here be removed");
         }
     }

@@ -510,7 +510,7 @@ void keeperOfSetsThread(
 				case message_header_t.syncRequest:
 				{
 					debug writeln("keeper: received sync request");
-					if (messenger.getMyID() == highestID())
+					if (messenger.getMyID() == highestID() && messenger.getMyID != receivedFromNetwork.senderID)
 					{
 						message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
 						debug writeln("keeper: sync message crote");
