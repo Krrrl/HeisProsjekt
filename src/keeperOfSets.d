@@ -50,11 +50,28 @@ void createElevator(ubyte id)
 	debug writeln("keeper: new elevator [", id, "] ALLOCATED");
 }
 
-void retireElevator(ubyte id)
+void retireElevator(ubyte id, ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn)
 {
 	deadElevators[id] = aliveElevators[id];
 	aliveElevators.remove(id);
 	debug writeln("keeper: elevator [", id, "] RETIRED");
+
+
+	message_t reDelegationOrder;
+	foreach(int floor; deadElevators[id].upQueue)
+	{
+		reDelegationOrder.orderFloor = floor;
+		reDelegationOrder.orderDirection = button_type_t.UP;
+		ordersToBeDelegatedChn.insert(reDelegationOrder);
+		removeFromList(id, floor);
+	}
+	foreach(int floor; deadElevators[id].downQueue)
+	{
+		reDelegationOrder.orderFloor = floor;
+		reDelegationOrder.orderDirection = button_type_t.DOWN;
+		ordersToBeDelegatedChn.insert(reDelegationOrder);
+		removeFromList(id, floor);
+	}
 }
 
 void addBestElevatorWithState(state_t wantedState, int wantedFloor, ref elevator_t[ubyte] candidates, ref elevator_t[ubyte] entrants)
@@ -622,7 +639,7 @@ void keeperOfSetsThread(
             {
 				if (!canFind(extractedPeerList.peers, id))
                 {
-					retireElevator(id);
+					retireElevator(id, ordersToBeDelegatedChn);
                 }
             }
 			debug writeln("keeper: alive ", aliveElevators.keys);
