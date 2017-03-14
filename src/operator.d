@@ -298,7 +298,7 @@ void operatorThread(
 				{
 					if(currentFloor == 1)
 					{
-						elev_motor_direction_t.DIRN_STOP;
+						elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
 						currentState = state_t.IDLE;
 						break;
 					}
@@ -335,6 +335,9 @@ void operatorThread(
 			{
 				debug writelnYellow("Operator: now FLOORSTOP");
 
+				stopAtFloor();
+				toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+
 				/* Check for new orders, restarts door timer */
 				if (shouldStopToExpediteOnFloor(previousValidFloor))
 				{
@@ -345,15 +348,15 @@ void operatorThread(
 				if (Clock.currTime.toUnixTime() > (timeAtFloorStop + stopDuration))
 				{
 					elev_set_door_open_lamp(0);
-					if(getDirectionToNextOrder() == elev_motor_direction_t.DIRN_STOP)
+					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_STOP)
 					{
 						currentState = state_t.IDLE;
 					}
-					if(getDirectionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
+					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_DOWN)
 					{
 						currentState = state_t.GOING_DOWN;
 					}
-					if(getDirectionToNextOrder == elev_motor_direction_t.DIRN_UP)
+					if(getDirectionToNextOrder(previousValidFloor) == elev_motor_direction_t.DIRN_UP)
 					{
 						currentState = state_t.GOING_UP;
 					}
@@ -367,9 +370,8 @@ void operatorThread(
                 /* Check for new orders on the same floor */
 				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
-					stopAtFloor();
-					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					currentState = state_t.FLOORSTOP;
+					break;
 				}
 
 				/* Check for new orders elsewhere */
