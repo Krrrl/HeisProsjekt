@@ -511,7 +511,10 @@ void keeperOfSetsThread(
 						receivedFromNetwork.orderFloor);
 
 					/* Update operators orders */
-					operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+                    if (receivedFromNetwork.senderID == messenger.getMyID())
+                    {
+                        operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+                    }
 
 					/* Set light if order is local-internal or external */
 					if (receivedFromNetwork.targetID == messenger.getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
@@ -568,6 +571,7 @@ void keeperOfSetsThread(
 				case message_header_t.syncRequest:
 				{
 					debug writeln("keeper: received sync request");
+                    debug writeln(highestEligableID(receivedFromNetwork.senderID));
 					if ((messenger.getMyID() == highestEligableID(receivedFromNetwork.senderID)))
 					{
 						message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
