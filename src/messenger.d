@@ -79,7 +79,7 @@ const Duration heartbeatPeriod = dur!"msecs"(300);
 
 private shared ubyte _myID = 0;
 private PeerList peerList;
-private MonoTime heartbeatTime;
+private MonoTime lastHeartbeatTime;
 
 ubyte getMyID()
 {
@@ -134,7 +134,7 @@ void messengerThread(
     message_t heartbeat;
     heartbeat.header = message_header_t.heartbeat;
     heartbeat.senderID = getMyID();
-    heartbeatTime = MonoTime.currTime;
+    lastHeartbeatTime = MonoTime.currTime;
 
 	while (true)
 	{
@@ -158,14 +158,13 @@ void messengerThread(
             {
                 debug writeln("messenger: received order from network");
                 debug writeln(" >> ", orderFromNetwork);
+                ordersToThisElevatorChn.insert(orderFromNetwork);
             }
 
 			if(orderFromNetwork.header == message_header_t.confirmOrder)
 			{
 				orderConfirmationsReceivedChn.insert(orderFromNetwork);
 			}
-
-            ordersToThisElevatorChn.insert(orderFromNetwork);
 
 		},
 			(PeerList list)
@@ -182,10 +181,9 @@ void messengerThread(
 			);
         
         /* Send heartbeat every heartbeatPeriod */
-                
-        if (MonoTime.currTime - heartbeatTime  > heartbeatPeriod)
+        if ((MonoTime.currTime - lastHeartbeatTime)  > heartbeatPeriod)
         {
-            heartbeatTime = MonoTime.currTime;
+            lastHeartbeatTime = MonoTime.currTime;
             heartbeat.timestamp = Clock.currTime().toUnixTime();
             heartbeat.currentState = getCurrentState();
             heartbeat.currentFloor = getPreviousValidFloor();

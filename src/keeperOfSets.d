@@ -463,8 +463,11 @@ void keeperOfSetsThread(
 						confirmingOrder.currentState    = getCurrentState();
 						confirmingOrder.currentFloor    = getPreviousValidFloor();
 						confirmingOrder.timestamp       = Clock.currTime().toUnixTime();
-                        // TODO: REMOVE PACKET LOSS! 
-						toNetworkChn.insert(confirmingOrder);
+                        // TODO: REMOVE DICE ROLLING PACKET LOSS!  THIS IS NO GAME!
+                        if (dice(0.5,0.5))
+                        {
+                            toNetworkChn.insert(confirmingOrder);
+                        }
 					}
 					break;
 				}

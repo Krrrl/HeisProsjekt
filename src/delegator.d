@@ -1,5 +1,6 @@
 import std.stdio,
-       std.datetime;
+       std.datetime,
+       core.time;
 
 import main,
        debugUtils,
@@ -33,9 +34,9 @@ void buttonCheckerThread(
 {
 	/* Construct prevState for all buttons */
 	bool[main.nrOfFloors][main.nrOfButtons] buttonPrevMatrix = false;
+    message_t newOrder;
 
-	/* Check button states and register new presses */
-	// TODO: Should this be in a seperate thread? We don't want to miss any button presses dues to processing new orders
+	/* Check button states and register new presses as orders */
     while (true)
     {
         foreach (floor; 0..main.nrOfFloors)
@@ -47,7 +48,6 @@ void buttonCheckerThread(
 
                 if (buttonState && !prevButtonState)
                 {
-                    message_t newOrder;
                     newOrder.orderFloor     = floor;
                     newOrder.orderDirection = buttonType;
                     ordersToBeDelegatedChn.insert(newOrder);
@@ -71,54 +71,62 @@ void delegatorThread(
 
 	while (true)
 	{
-		/* Delegate new orders */
 		message_t newOrder;
 		message_t confirmationReceived;
-		bool currentlySending = false;
+		bool waitingForConfirmation = false;
 		int timeoutCounter;
 		
-		if(!currentlySending)
+		/* Delegate new orders */
+		if(!waitingForConfirmation)
 		{
 			if(ordersToBeDelegatedChn.extract(newOrder))
 			{
 				createDelegateOrder(newOrder);
 				toNetworkChn.insert(newOrder);
-				currentlySending = true;
-				auto timeOfSending = Clock.currTime().fracSecs();
+				waitingForConfirmation = true;
+				MonoTime timeOfSending = MonoTime.currTime;
 				timeoutCounter = 0;
 
+                /* Wait for confirm for a number of retries */
 				while(timeoutCounter < timeoutCounterThreshold)
 				{
-					if(!currentlySending)
+                    /* Break condition for outer loop */
+					if(!waitingForConfirmation)
 					{
 						break;
 					}
 
-					while((Clock.currTime().fracSecs() - timeOfSending) < confirmationTimeoutThreshold)
+                    /* Check for confirmations untill timeout or a confirmation is received  */
+					while((MonoTime.currTime - timeOfSending) < confirmationTimeoutThreshold)
 					{
 						if(orderConfirmationsReceivedChn.extract(confirmationReceived))
 						{
 							if(confirmationReceived.targetID == messenger.getMyID())
 							{
-								debug writelnYellow("Delegator speaking: received the appropriet confirmation within the timeoutThreshold, wooho!");
-								currentlySending = false;
+								debug writelnRed("Delegator speaking: received the appropriet confirmation within the timeoutThreshold, wooho!");
+								waitingForConfirmation = false;
 								break;
 							}
 						}
 					}
-					if((Clock.currTime().fracSecs() - timeOfSending) > confirmationTimeoutThreshold)
+                    
+                    /* If timed out, increase timeoutcounter */
+					if((MonoTime.currTime - timeOfSending) > confirmationTimeoutThreshold)
 					{
 						timeoutCounter++;
+                        debug writelnRed("Delegator speaking: timeout, counter is now:");
+                        debug writeln(timeoutCounter);
 						toNetworkChn.insert(newOrder);
-						timeOfSending = Clock.currTime().fracSecs();
+						timeOfSending = MonoTime.currTime;
 					}
 				}
 
-				if(currentlySending)
+                /* Throw back any unconfirmed order to be delegated again */
+				if(waitingForConfirmation)
 				{
-				debug writelnYellow("Delegator: Back of the line with you!");
-				ordersToBeDelegatedChn.insert(newOrder);
-				currentlySending = false;
+                    debug writelnRed("Delegator speaking: Back of the line with you!");
+                    ordersToBeDelegatedChn.insert(newOrder);
+                    waitingForConfirmation = false;
 				}
 			}
 		}		
