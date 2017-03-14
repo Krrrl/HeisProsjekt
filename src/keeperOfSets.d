@@ -432,16 +432,22 @@ void syncMySet(shared int[main.nrOfFloors] internalOrders)
 	}
 }
 
-ubyte highestID()
+ubyte highestEligableID(ubyte senderID)
 {
-	ubyte highestID = messenger.getMyID();
+	ubyte tempID = 0;
+	bool[ubyte] eligableElevators = aliveElevators.dup;
 
-	foreach (elevator; aliveElevators)
+	/* senderID from eligable elevators */
+	eligableElevators = remove(eligableElevators[senderID]);
+
+	foreach (elevator; eligableElevators)
 	{
-		if (messenger.getMyID() < elevator.ID)
-			highestID = elevator.ID;
+		if (tempID < elevator.ID)
+		{
+			tempID = elevator.ID;
+		}
 	}
-	return highestID;
+	return tempID;
 }
 
 void keeperOfSetsThread(
@@ -492,7 +498,7 @@ void keeperOfSetsThread(
                 /* Triggers for confirmations */
 				case message_header_t.confirmOrder:
 				{
-					/* Add to senders lists */
+					/* Add to sender's lists */
 					addToList(
 						receivedFromNetwork.senderID,
 						receivedFromNetwork.orderDirection,
@@ -556,7 +562,7 @@ void keeperOfSetsThread(
 				case message_header_t.syncRequest:
 				{
 					debug writeln("keeper: received sync request");
-					if (messenger.getMyID() == highestID() && messenger.getMyID != receivedFromNetwork.senderID)
+					if ((messenger.getMyID() == highestEligableID(receivedFromNetwork.senderID)))
 					{
 						message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
 						debug writeln("keeper: sync message crote");
