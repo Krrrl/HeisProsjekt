@@ -31,7 +31,7 @@ private watchdogTAG[ubyte] latestExpedites;
 private long[ubyte] mostRecentExpediteTime;
 
 //longest do-nothing interval allowed.
-private long confirmedTimeoutThreshold = 10;
+private long confirmedTimeoutThreshold = 2;
 
 /*
  * @brief   Thread responsible for watching the livelihood of other elevatorTAGs
