@@ -6,7 +6,8 @@ import core.time,
        std.concurrency,
        std.datetime,
        std.algorithm.searching,
-       std.algorithm.sorting;
+       std.algorithm.sorting,
+       std.algorithm.mutation;
 
 import udp_bcast,
        peers;
@@ -97,6 +98,16 @@ bool shouldStopToExpediteOnFloor(int floor)
     {
 		if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
         {
+            remove(ordersForThisElevator[button_type_t.INTERNAL],
+                    find(ordersForThisElevator[button_type_t.INTERNAL].dup,floor));
+            remove(ordersForThisElevator[button_type_t.UP],
+                    find(ordersForThisElevator[button_type_t.UP],floor));
+            remove(ordersForThisElevator[button_type_t.DOWN],
+                    find(ordersForThisElevator[button_type_t.DOWN],floor));
+
+            //ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
+            //ordersForThisElevator[button_type_t.UP].remove(floor);
+            //ordersForThisElevator[button_type_t.DOWN].remove(floor);
 			return true;
         }
     }
@@ -110,6 +121,9 @@ bool shouldStopToExpediteOnFloor(int floor)
             {
 				if (canFind(ordersForThisElevator[button_type_t.UP], floor))
                 {
+                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
+                    ordersForThisElevator[button_type_t.UP].remove(floor);
+                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
 					return true;
                 }
             }
@@ -130,6 +144,9 @@ bool shouldStopToExpediteOnFloor(int floor)
                 }
 				if (highestDownOrder == floor && highestDownOrder > highestNonDownOrder)
                 {
+                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
+                    ordersForThisElevator[button_type_t.UP].remove(floor);
+                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
 					return true;
                 }
 			}
@@ -141,6 +158,9 @@ bool shouldStopToExpediteOnFloor(int floor)
             {
 				if (canFind(ordersForThisElevator[button_type_t.DOWN], floor))
                 {
+                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
+                    ordersForThisElevator[button_type_t.UP].remove(floor);
+                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
 					return true;
                 }
             }
@@ -161,6 +181,9 @@ bool shouldStopToExpediteOnFloor(int floor)
                 }
 				if (lowestUpOrder == floor && lowestUpOrder <= lowestNonUpOrder)
                 {
+                    ordersForThisElevator[button_type_t.INTERNAL].remove(floor);
+                    ordersForThisElevator[button_type_t.UP].remove(floor);
+                    ordersForThisElevator[button_type_t.DOWN].remove(floor);
 					return true;
                 }
 			}
@@ -330,6 +353,7 @@ void operatorThread(
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+
 				}
 
 				/* Check for new orders elsewhere */

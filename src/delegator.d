@@ -18,8 +18,8 @@ void createDelegateOrder(ref message_t newOrder)
 	newOrder.targetID       = findMatch(newOrder.orderFloor, newOrder.orderDirection);
 }
 
-private auto confirmationTimeoutThreshold = 300;
-private int timeoutCounterThreshold;
+const private Duration confirmationTimeoutThreshold = dur!"msecs"(200);
+const private int timeoutCounterThreshold = 5;
 
 /*
  * @brief Thread responsible for delegating orders that haven't been delegated yet
@@ -28,8 +28,13 @@ private int timeoutCounterThreshold;
  * @param locallyPlacedOrdersChn: channel with
  */
 
-void buttonCheckerThread(ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn)
+void buttonCheckerThread(
+        ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn
+        )
 {
+	/* Construct prevState for all buttons */
+	bool[main.nrOfFloors][main.nrOfButtons] buttonPrevMatrix = false;
+
 	/* Check button states and register new presses */
 	// TODO: Should this be in a seperate thread? We don't want to miss any button presses dues to processing new orders
 	foreach (floor; 0..main.nrOfFloors)
@@ -61,8 +66,6 @@ void delegatorThread(
 	)
 {
 	debug writelnGreen("    [x] delegatorThread");
-	/* Construct prevState for all buttons */
-	bool[main.nrOfFloors][main.nrOfButtons] buttonPrevMatrix = false;
 
 	while (true)
 	{
@@ -83,7 +86,7 @@ void delegatorThread(
 				auto timeOfSending = Clock.currTime().fracSecs();
 				timeoutCounter = 0;
 
-				while(timeoutCounter < timeoutThreshold)
+				while(timeoutCounter < timeoutCounterThreshold)
 				{
 					if(!currentlySending)
 					{
@@ -92,7 +95,7 @@ void delegatorThread(
 
 					while((Clock.currTime().fracSecs() - timeOfSending) < confirmationTimeoutThreshold)
 					{
-						if(orderConfirmationsReceivedChn.exstract(confirmationReceived))
+						if(orderConfirmationsReceivedChn.extract(confirmationReceived))
 						{
 							if(confirmationReceived.targetID == messenger.getMyID())
 							{

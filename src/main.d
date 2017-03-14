@@ -39,7 +39,6 @@ void main(string[] args)
 	/* channel for updating the operator on this elevators current orders*/
 	shared NonBlockingChannel!orderList_t operatorsOrdersChn = new
         NonBlockingChannel!orderList_t;
-
     /* channel for watchdog-alerts to keeper about timed-out orders */
     shared NonBlockingChannel!message_t watchdogAlertChn = new NonBlockingChannel!message_t;
 
@@ -64,6 +63,7 @@ void main(string[] args)
 	Tid watchdogTid;
 	Tid operatorTid;
 	Tid delegatorTid;
+    Tid buttonCheckerTid;
 
 
 	keeperOfSetsTid = spawnLinked(
@@ -103,7 +103,7 @@ void main(string[] args)
 		ordersToBeDelegatedChn,
 		orderConfirmationsReceivedChn);
 
-	buttonCheckerThread = spawnLinked(
+	buttonCheckerTid = spawnLinked(
 		&buttonCheckerThread,
 		ordersToBeDelegatedChn);
 
