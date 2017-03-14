@@ -604,19 +604,19 @@ void keeperOfSetsThread(
 				reDistOrder.orderFloor = watchdogAlert.orderFloor;
 				reDistOrder.timestamp = Clock.currTime().toUnixTime();
 				
-				if(aliveElevators[watchdogAlert.targetID].downQueue[orderFloor])
+				if(aliveElevators[watchdogAlert.targetID].downQueue[reDistOrder.orderFloor])
 				{
 					reDistOrder.orderDirection = button_type_t.DOWN;
 					toNetworkChn.insert(reDistOrder);
 
 				}
-				if(aliveElevators[watchdogAlert.targetID].upQueue)
+				if(aliveElevators[watchdogAlert.targetID].upQueue[reDistOrder.orderFloor])
 				{
 					reDistOrder.orderDirection = button_type_t.UP;
 					toNetworkChn.insert(reDistOrder);
 
 				}
-				if(aliveElevators[watchdogAlert.targetID].internalQueue)
+				if(aliveElevators[watchdogAlert.targetID].internalQueue[reDistOrder.orderFloor])
 				{
 					reDistOrder.orderDirection = button_type_t.INTERNAL;
 					toNetworkChn.insert(reDistOrder);
