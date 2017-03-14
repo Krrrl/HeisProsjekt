@@ -253,10 +253,6 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 
 /*
  * @brief   Thread responsible for operating the lift and carrying out orders delegated to this elevator
- * @details Implemented with a state machine
- *
- * param toElevatorChn: channel directed to this elevator
- * param toNetworkChn: channel directed to external network
  */
 void operatorThread(
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
@@ -315,6 +311,19 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
+				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
+                if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
+                {
+                    elev_set_motor_direction(directionToNextOrder);
+					previousDirection = state_t.GOING_UP;
+                    currentState = state_t.GOING_DOWN;
+                }
+                if (directionToNextOrder == elev_motor_direction_t.DIRN_STOP)
+                {
+                    elev_set_motor_direction(directionToNextOrder);
+					previousDirection = state_t.GOING_UP;
+                    currentState = state_t.IDLE;
+                }
 				break;
 			}
 			case (state_t.GOING_DOWN):
@@ -327,6 +336,19 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
+				elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
+                if (directionToNextOrder == elev_motor_direction_t.DIRN_UP)
+                {
+                    elev_set_motor_direction(directionToNextOrder);
+					previousDirection = state_t.GOING_DOWN;
+                    currentState = state_t.GOING_UP;
+                }
+                if (directionToNextOrder == elev_motor_direction_t.DIRN_STOP)
+                {
+                    elev_set_motor_direction(directionToNextOrder);
+					previousDirection = state_t.GOING_DOWN;
+                    currentState = state_t.IDLE;
+                }
 				break;
 			}
 			case (state_t.FLOORSTOP):
