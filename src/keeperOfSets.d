@@ -631,7 +631,7 @@ void keeperOfSetsThread(
                     {
                         reDistOrder.orderDirection = button_type_t.DOWN;
                         debug writelnRed("keeper: watchdog alert down");
-                        toNetworkChn.insert(reDistOrder);
+                        ordersToBeDelegatedChn.insert(reDistOrder);
 
                     }
                 }
@@ -641,7 +641,7 @@ void keeperOfSetsThread(
                     {
                         reDistOrder.orderDirection = button_type_t.UP;
                         debug writelnRed("keeper: watchdog alert up");
-                        toNetworkChn.insert(reDistOrder);
+                        ordersToBeDelegatedChn.insert(reDistOrder);
 
                     }
                 }

@@ -126,6 +126,7 @@ bool shouldStopToExpediteOnFloor(int floor)
 		return false;
     }
 
+    
 	if (ordersForThisElevator[button_type_t.INTERNAL].length)
     {
 		if (canFind(ordersForThisElevator[button_type_t.INTERNAL], floor))
