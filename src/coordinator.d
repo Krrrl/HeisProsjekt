@@ -76,7 +76,6 @@ void retireElevator(ubyte id, ref shared NonBlockingChannel!message_t ordersToBe
 
 void addBestElevatorWithState(state_t wantedState, int wantedFloor, ref elevator_t[ubyte] candidates, ref elevator_t[ubyte] entrants)
 {
-	debug writeln("Find best suited elevator in state: ", wantedState);
 	foreach(ubyte id, elevator; candidates)
 	{
 		if(elevator.currentState == wantedState)
@@ -135,24 +134,21 @@ void keepFurtherestElevator(elevator_t[ubyte] entrants, int floor)
 	} 
 }
 
-// TODO Skrive om denne kommentaren, om den skal være her
-//findMatch finner best egna elevator for en ordre ved å se på tilstand + floor,
-//i tilfellet det e flere mulige for oppdraget velge den den nærmeste.
+/* returns most suitable elevator for an order */
 ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
 	if (orderDirection == button_type_t.INTERNAL)
 	{
+<<<<<<< HEAD
+		return messenger.getMyID();
+=======
 		debug writeln("giving myself the internal order for floor: ", orderFloor);
 		return routor.getMyID();
+>>>>>>> d79f044f65860ab608c91cf916f5b45ca0a42581
 	}
 
 	elevator_t[ubyte] candidates = (cast(elevator_t[ubyte])aliveElevators).dup;
-    debug writeln("CANDIDATES: ", candidates.keys);
 	elevator_t[ubyte] entrants;
-    foreach(ubyte id, elevator; aliveElevators)
-    {
-        debug writeln("alive elev ", id, " at floor ", elevator.currentFloor);
-    }
 
 	if(orderDirection == button_type_t.DOWN)
 	{
@@ -160,7 +156,6 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		{
 			if(entrants.length == 1)
 			{
-                debug writelnRed("FOUND A MATCH at DOWN and priority");
                 debug writeln(priority - 1);
 				return entrants.keys[0];
 			}
@@ -178,11 +173,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 							entrants[id] = candidates[id];
 						}
 					}
-                    debug writeln("entrants after priority 0: ", entrants.keys);
-                    foreach(ubyte id, elevator; entrants)
-                    {
-                        debug writeln(id, " at floor: ", elevator.currentFloor);
-                    }
+
 					if(entrants.length > 1)
 					{
 						keepNearestElevator(entrants, orderFloor);
@@ -192,13 +183,11 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				case 1:
 				{
 					addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
-                    debug writeln("entrants after priority 1", entrants.keys);
 					break;
 				}
 				case 2:
 				{
 					addBestElevatorWithState(state_t.GOING_UP, orderFloor, candidates, entrants);
-                    debug writeln("entrants after priority 2", entrants.keys);
 					break;
 				}
 				case 3:
@@ -210,7 +199,6 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 							entrants[id] = candidates[id];
 						}
 					}
-                    debug writeln("entrants after priority 3", entrants.keys);
 					if(entrants.length > 1)
 					{
 						keepFurtherestElevator(entrants, orderFloor);
@@ -219,8 +207,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				}
 				default:
 				{
-					debug writelnRed("NO elevators eligable for DOWN order: ");
-                    debug writeln(orderFloor);
+					break;
 				}
 			}
 		}
@@ -232,7 +219,6 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		{
 			if(entrants.length == 1)
 			{
-                debug writelnRed("FOUND A MATCH at UP and priority");
                 debug writeln(priority - 1);
 				return entrants.keys[0];
 			}
@@ -250,11 +236,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 							entrants[id] = candidates[id];
 						}
 					}
-                    debug writeln("entrants after priority 0", entrants.keys);
-                    foreach(ubyte id, elevator; entrants)
-                    {
-                        debug writeln(id, " at floor: ", elevator.currentFloor);
-                    }
+
 					if(entrants.length > 1)
 					{
 						keepNearestElevator(entrants, orderFloor);
@@ -264,13 +246,11 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				case 1:
 				{
 					addBestElevatorWithState(state_t.IDLE, orderFloor, candidates, entrants);
-                    debug writeln("entrants after priority 1", entrants.keys);
 					break;
 				}
 				case 2:
 				{
 					addBestElevatorWithState(state_t.GOING_DOWN, orderFloor, candidates, entrants);
-                    debug writeln("entrants after priority 2", entrants.keys);
 					break;
 				}
 				case 3:
@@ -282,7 +262,6 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 							entrants[id] = candidates[id];
 						}
 					}
-                    debug writeln("entrants after priority 3", entrants.keys);
 					if(entrants.length > 1)
 					{
 						keepFurtherestElevator(entrants, orderFloor);
@@ -291,22 +270,24 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 				}
 				default:
 				{
-					debug writelnRed("NO elevators eligable for UP order: ");
-                    debug writeln(orderFloor);
+					break;
 				}
 			}
 		}
 	}
+<<<<<<< HEAD
+    debug writelnRed("Found NO suitable elevator for order-> choosing myself");
+	return messenger.getMyID();
+=======
     debug writelnRed("NO SUITABLE ELEVATOR. TAKING MYSELF");
 	return routor.getMyID();
+>>>>>>> d79f044f65860ab608c91cf916f5b45ca0a42581
 }
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 {
 	if (targetID in deadElevators)
 	{
-		// Do what? Error handling?
-		debug writelnYellow("coordinator: tried to add to inactive's list");
 		return;
 	}
 	if (targetID !in aliveElevators)
@@ -373,7 +354,7 @@ orderList_t getElevatorsOrders(ubyte id)
 	}
 	else
 	{
-		debug writelnYellow("coordinator: attempt to get nonalive elevators orders");
+		debug writelnYellow("coordinator: attempted to get dead-elevators orders");
 	}
 	return orders;
 }
@@ -398,22 +379,19 @@ message_t createSyncInfo(ubyte targetID)
 	newSyncMessage.targetID = targetID;
 
 	int[main.nrOfFloors] internalOrders;
-	debug writeln("internalOrders So far: ", internalOrders);
+
 	if (targetID in deadElevators)
     {
-		debug writelnRed("syncer was in dead");
 	    reviveElevator(targetID);
     }
 	if (targetID !in aliveElevators)
     {
-		debug writelnRed("syncer wasn't in dead");
 	    createElevator(targetID);
     }
-	debug writelnPurple("i don't know anymore");
+
 	debug writeln(aliveElevators[targetID].internalQueue.keys);
 	foreach (floor; aliveElevators[targetID].internalQueue.keys)
     {
-		debug writeln("setting floor ", floor);
 		internalOrders[floor] = 1;
     }
 	newSyncMessage.syncInfo = internalOrders.dup;
@@ -444,12 +422,9 @@ ubyte highestEligableID(ubyte senderID)
 	ubyte tempID = 0;
 	elevator_t[ubyte] eligableElevators = (cast(elevator_t[ubyte])aliveElevators).dup;
 
-    debug writeln("eligable?");
-    debug writeln(eligableElevators);
 	/* Remove senderID from eligable elevators */
 	eligableElevators.remove(senderID);
 
-    debug writeln(eligableElevators);
 	foreach (id; eligableElevators.keys)
 	{
         debug writeln(id);
@@ -461,6 +436,8 @@ ubyte highestEligableID(ubyte senderID)
 	return tempID;
 }
 
+
+/* Thread responsible for coordinating the elevators modules and behaviour */
 void coordinatorThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
@@ -576,7 +553,6 @@ void coordinatorThread(
 					if ((routor.getMyID() == highestEligableID(receivedFromNetwork.senderID)))
 					{
 						message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
-						debug writeln("coordinator: sync message crote");
 						toNetworkChn.insert(syncInfo);
 					}
 					break;
@@ -616,8 +592,6 @@ void coordinatorThread(
 			if(watchdogAlert.targetID in aliveElevators)
 			{
                 int alertedFloor = watchdogAlert.orderFloor;
-                debug writelnRed("coordinator: watchdogalert at target and floor");
-                debug writeln(watchdogAlert.targetID, " ", alertedFloor);
 
 				reDistOrder.header = message_header_t.delegateOrder;
 				reDistOrder.senderID = routor.getMyID();
@@ -625,15 +599,12 @@ void coordinatorThread(
 				reDistOrder.orderFloor = alertedFloor;
 				reDistOrder.timestamp = Clock.currTime().toUnixTime();
 				
-                debug writeln("start of ifs");
                 if (alertedFloor in aliveElevators[watchdogAlert.targetID].downQueue)
                 {
                     if(aliveElevators[watchdogAlert.targetID].downQueue[alertedFloor])
                     {
                         reDistOrder.orderDirection = button_type_t.DOWN;
-                        debug writelnRed("coordinator: watchdog alert down");
                         ordersToBeDelegatedChn.insert(reDistOrder);
-
                     }
                 }
                 if (alertedFloor in aliveElevators[watchdogAlert.targetID].upQueue)
@@ -641,9 +612,7 @@ void coordinatorThread(
                     if(aliveElevators[watchdogAlert.targetID].upQueue[alertedFloor])
                     {
                         reDistOrder.orderDirection = button_type_t.UP;
-                        debug writelnRed("coordinator: watchdog alert up");
                         ordersToBeDelegatedChn.insert(reDistOrder);
-
                     }
                 }
                 if (alertedFloor in aliveElevators[watchdogAlert.targetID].internalQueue)
@@ -651,12 +620,9 @@ void coordinatorThread(
                     if(aliveElevators[watchdogAlert.targetID].internalQueue[alertedFloor])
                     {
                         reDistOrder.orderDirection = button_type_t.INTERNAL;
-                        debug writelnRed("coordinator: watchdog alert internal");
                         toNetworkChn.insert(reDistOrder);
-
                     }
                 }
-                debug writelnRed("coordinator: watchdog alert redelegated?");
 			}
 		}
 
