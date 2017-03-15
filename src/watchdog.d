@@ -7,14 +7,13 @@ import core.time,
        std.datetime;
 
 import udp_bcast,
-       peers,
-       messenger,
-       keeperOfSets,
-       main;
+       peers;
 
-import debugUtils,
+import main,
+       messenger,
+       debugUtils,
        channels,
-       keeperOfSets,
+       cordinator,
        messenger,
        iolib;
 

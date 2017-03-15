@@ -15,7 +15,7 @@ import udp_bcast,
 import main,
        channels,
        debugUtils,
-       keeperOfSets,
+       cordinator,
        messenger,
        watchdog,
        iolib;
