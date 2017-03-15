@@ -294,8 +294,11 @@ void operatorThread(
 		currentFloor = elev_get_floor_sensor_signal();
 		if (currentFloor != -1)
         {
+            if (currentFloor != previousValidFloor)
+            {
+                elev_set_floor_indicator(previousValidFloor);
+            }
 			previousValidFloor = currentFloor;
-            elev_set_floor_indicator(previousValidFloor);
         }
 
 		/* Do state dependent actions */
