@@ -295,6 +295,7 @@ void operatorThread(
 		if (currentFloor != -1)
         {
 			previousValidFloor = currentFloor;
+            elev_set_floor_indicator(previousValidFloor);
         }
 
 		/* Do state dependent actions */
