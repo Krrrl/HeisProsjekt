@@ -34,7 +34,7 @@ const int stopDuration                  = 3;
 private int currentFloor                = 0;
 private shared int previousValidFloor   = -1;
 private shared state_t currentState     = state_t.INIT;
-private state_t previousDirection;
+private state_t currentDirection;
 private long timeAtFloorStop            = 0;
 
 private int[][button_type_t] ordersForThisElevator;
@@ -135,7 +135,7 @@ bool shouldStopToExpediteOnFloor(int floor)
         }
     }
 
-	switch (previousDirection)
+	switch (currentDirection)
 	{
 		case (state_t.GOING_UP):
 		{
@@ -230,7 +230,7 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 	{
 		/* Sort all orders in ascending order */
 		sort(allOrders);
-		switch (previousDirection)
+		switch (currentDirection)
 		{
 		default:
 			case (state_t.GOING_UP):
@@ -280,7 +280,7 @@ void operatorThread(
 
     /* Set motor to go down for init state */
     elev_set_motor_direction(elev_motor_direction_t.DIRN_DOWN);
-    previousDirection = state_t.GOING_DOWN;
+    currentDirection = state_t.GOING_DOWN;
 
 	while (true)
 	{
@@ -318,14 +318,12 @@ void operatorThread(
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-					previousDirection = state_t.GOING_UP;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
                 if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-                    previousDirection = state_t.GOING_UP;
                     currentState = state_t.IDLE;
                 }
 				break;
@@ -336,14 +334,12 @@ void operatorThread(
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
-					previousDirection = state_t.GOING_DOWN;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
                 if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
-                    previousDirection = state_t.GOING_DOWN;
                     currentState = state_t.IDLE;
                 }
 				break;
@@ -371,12 +367,14 @@ void operatorThread(
 					{
                         elev_set_motor_direction(directionToNextOrder);
 						currentState = state_t.GOING_DOWN;
+						currentDirection = state_t.GOING_DOWN;
 						debug writelnYellow("Operator: now GOING_DOWN");
 					}
 					if(directionToNextOrder == elev_motor_direction_t.DIRN_UP)
 					{
                         elev_set_motor_direction(directionToNextOrder);
 						currentState = state_t.GOING_UP;
+						currentDirection = state_t.GOING_UP;
 						debug writelnYellow("Operator: now GOING_UP");
 					}
 				}
@@ -400,12 +398,14 @@ void operatorThread(
 				{
 					elev_set_motor_direction(directionToNextOrder);
 					currentState = state_t.GOING_UP;
+					currentDirection = state_t.GOING_UP;
 					debug writelnYellow("Operator: now GOING_UP");
 				}
 				if (directionToNextOrder == elev_motor_direction_t.DIRN_DOWN)
 				{
 					elev_set_motor_direction(directionToNextOrder);
 					currentState = state_t.GOING_DOWN;
+					currentDirection = state_t.GOING_DOWN;
 					debug writelnYellow("Operator: now GOING_DOWN");
 				}
 				break;
