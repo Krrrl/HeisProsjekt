@@ -13,7 +13,7 @@ import main,
        messenger,
        debugUtils,
        channels,
-       cordinator,
+       coordinator,
        messenger,
        iolib;
 

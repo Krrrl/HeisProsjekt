@@ -11,7 +11,7 @@ import udp_bcast,
 
 import channels,
        debugUtils,
-       cordinator,
+       coordinator,
        messenger,
        watchdog,
        operator,
@@ -24,7 +24,7 @@ const nrOfPeers         = 3;
 
 void main(string[] args)
 {
-	/* Channel fra messenger til cordinator */
+	/* Channel fra messenger til coordinator */
 	shared NonBlockingChannel!message_t ordersToThisElevatorChn = new NonBlockingChannel!message_t;
 	/* channel fra Keeper til network */
 	shared NonBlockingChannel!message_t toNetworkChn = new NonBlockingChannel!message_t;
@@ -39,7 +39,7 @@ void main(string[] args)
 	/* channel for updating the operator on this elevators current orders*/
 	shared NonBlockingChannel!orderList_t operatorsOrdersChn = new
         NonBlockingChannel!orderList_t;
-    /* channel for watchdog-alerts to cordinator about timed-out orders */
+    /* channel for watchdog-alerts to coordinator about timed-out orders */
     shared NonBlockingChannel!message_t watchdogAlertChn = new NonBlockingChannel!message_t;
 
 	debug writeln("Initializing lift hardware ...");
@@ -59,15 +59,15 @@ void main(string[] args)
 
 	debug writeln("Spawning Threads ...");
 	Tid messengerTid;
-	Tid cordinatorTid;
+	Tid coordinatorTid;
 	Tid watchdogTid;
 	Tid operatorTid;
 	Tid delegatorTid;
     Tid buttonCheckerTid;
 
 
-	cordinatorTid = spawnLinked(
-		&cordinatorThread,
+	coordinatorTid = spawnLinked(
+		&coordinatorThread,
 		toNetworkChn,
 		ordersToThisElevatorChn,
 		ordersToBeDelegatedChn,
@@ -118,7 +118,7 @@ void main(string[] args)
 			// TODO: use Tid's to kill all threads
 			Array!Tid listOfTids;
 			listOfTids.insert(messengerTid);
-			listOfTids.insert(cordinatorTid);
+			listOfTids.insert(coordinatorTid);
 			listOfTids.insert(watchdogTid);
 			listOfTids.insert(operatorTid);
 			listOfTids.insert(delegatorTid);
