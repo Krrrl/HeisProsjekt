@@ -423,7 +423,8 @@ message_t createSyncInfo(ubyte targetID)
 
 void syncMySet(shared int[main.nrOfFloors] internalOrders)
 {
-	debug writeln("coordinator: syncing my sets with ", internalOrders);
+	debug writelnRed("coordinator: syncing my sets with ");
+    debug writeln(internalOrders);
 	if (messenger.getMyID() in deadElevators)
 		reviveElevator(messenger.getMyID());
 	else if (messenger.getMyID() !in aliveElevators)

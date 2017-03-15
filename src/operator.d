@@ -34,7 +34,8 @@ const int stopDuration                  = 3;
 private int currentFloor                = 0;
 private shared int previousValidFloor   = -1;
 private shared state_t currentState     = state_t.INIT;
-private state_t currentDirection;
+private state_t currentDirection        = state_t.GOING_DOWN;
+private state_t previousDirection;
 private long timeAtFloorStop            = 0;
 
 private int[][button_type_t] ordersForThisElevator;
@@ -135,7 +136,7 @@ bool shouldStopToExpediteOnFloor(int floor)
         }
     }
 
-	switch (currentDirection)
+	switch (previousDirection)
 	{
 		case (state_t.GOING_UP):
 		{
@@ -322,12 +323,14 @@ void operatorThread(
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+                    previousDirection = state_t.GOING_UP;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
                 if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_UP)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                    previousDirection = state_t.GOING_UP;
                     currentState = state_t.IDLE;
                 }
 				break;
@@ -338,12 +341,14 @@ void operatorThread(
 				{
 					stopAtFloor();
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
+                    previousDirection = state_t.GOING_DOWN;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
                 if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_DOWN)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                    previousDirection = state_t.GOING_DOWN;
                     currentState = state_t.IDLE;
                 }
 				break;
