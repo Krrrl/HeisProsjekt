@@ -325,7 +325,7 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
-                if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
+                if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_UP)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
                     currentState = state_t.IDLE;
@@ -341,7 +341,7 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
-                if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
+                if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_DOWN)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
                     currentState = state_t.IDLE;
