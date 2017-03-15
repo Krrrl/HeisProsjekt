@@ -41,7 +41,6 @@ private int[][button_type_t] ordersForThisElevator;
 
 state_t getCurrentState()
 {
-    //return previousDirection;
 	return currentState;
 }
 
@@ -214,6 +213,17 @@ bool shouldStopToExpediteOnFloor(int floor)
 
 elev_motor_direction_t getDirectionToNextOrder(int floor)
 {
+    if (floor == -1)
+    {
+        if (currentState == state_t.GOING_UP)
+        {
+            return elev_motor_direction_t.DIRN_UP;
+        }
+        else if (currentState == state_t.GOING_DOWN)
+        {
+            return elev_motor_direction_t.DIRN_DOWN;
+        }
+    }
 	int[] allOrders = ordersForThisElevator[button_type_t.UP] ~ordersForThisElevator[button_type_t.DOWN] ~ordersForThisElevator[button_type_t.INTERNAL];
 
 	if (allOrders.length)
@@ -254,10 +264,6 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 
 /*
  * @brief   Thread responsible for operating the lift and carrying out orders delegated to this elevator
- * @details Implemented with a state machine
- *
- * param toElevatorChn: channel directed to this elevator
- * param toNetworkChn: channel directed to external network
  */
 void operatorThread(
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
@@ -316,6 +322,12 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
+                if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
+                {
+                    elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                    previousDirection = state_t.GOING_UP;
+                    currentState = state_t.IDLE;
+                }
 				break;
 			}
 			case (state_t.GOING_DOWN):
@@ -328,12 +340,18 @@ void operatorThread(
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
 				}
+                if (getDirectionToNextOrder(currentFloor) == elev_motor_direction_t.DIRN_STOP)
+                {
+                    elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
+                    previousDirection = state_t.GOING_DOWN;
+                    currentState = state_t.IDLE;
+                }
 				break;
 			}
 			case (state_t.FLOORSTOP):
 			{
 				/* Check for new orders, restarts door timer */
-				if (shouldStopToExpediteOnFloor(previousValidFloor))
+				if (shouldStopToExpediteOnFloor(currentFloor))
 				{
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					timeAtFloorStop = Clock.currTime.toUnixTime();
