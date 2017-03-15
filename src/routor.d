@@ -113,20 +113,20 @@ message_t createSyncRequest()
 /*
  * @brief   Thread responsible for passing messages between network module and remaining modules
  */
-void messengerThread(
+void routorThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t orderConfirmationsReceivedChn,
 	ref shared NonBlockingChannel!PeerList peerListChn,
 	)
 {
-	debug writelnGreen("    [x] messengerThread");
+	debug writelnGreen("    [x] routorThread");
 	Tid peerTx = peers.init;
 	_myID = peers.id;
-	debug writeln("messenger: myID is [", getMyID(), "]");
+	debug writeln("routor: myID is [", getMyID(), "]");
 	Tid networkTid = udp_bcast.init!(message_t)(getMyID(), thisTid());
 
-    debug writeln("messenger: sending sync request");
+    debug writeln("routor: sending sync request");
     toNetworkChn.insert(createSyncRequest());
 
 	message_t receivedToNetworkOrder;
@@ -156,7 +156,7 @@ void messengerThread(
 		{
             if (orderFromNetwork.header != message_header_t.heartbeat)
             {
-                debug writeln("messenger: received order from network");
+                debug writeln("routor: received order from network");
                 debug writeln(" >> ", orderFromNetwork);
             }
 
@@ -170,13 +170,13 @@ void messengerThread(
 		},
 			(PeerList list)
 		{
-			debug writelnBlue("messenger: received PeerList from network");
+			debug writelnBlue("routor: received PeerList from network");
 			updatePeerList(list);
 			peerListChn.insert(list);
 		},
 			(Variant v)
 		{
-			debug writelnYellow("messenger: received Variant from network");
+			debug writelnYellow("routor: received Variant from network");
 			debug writeln(">>> ", v);
 		}
 			);

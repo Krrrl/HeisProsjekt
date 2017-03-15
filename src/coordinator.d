@@ -8,7 +8,7 @@ import std.stdio,
 
 import main,
        debugUtils,
-       messenger,
+       routor,
        operator,
        channels,
        peers,
@@ -143,7 +143,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 	if (orderDirection == button_type_t.INTERNAL)
 	{
 		debug writeln("giving myself the internal order for floor: ", orderFloor);
-		return messenger.getMyID();
+		return routor.getMyID();
 	}
 
 	elevator_t[ubyte] candidates = (cast(elevator_t[ubyte])aliveElevators).dup;
@@ -298,7 +298,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 		}
 	}
     debug writelnRed("NO SUITABLE ELEVATOR. TAKING MYSELF");
-	return messenger.getMyID();
+	return routor.getMyID();
 }
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
@@ -425,15 +425,15 @@ void syncMySet(shared int[main.nrOfFloors] internalOrders)
 {
 	debug writelnRed("coordinator: syncing my sets with ");
     debug writeln(internalOrders);
-	if (messenger.getMyID() in deadElevators)
-		reviveElevator(messenger.getMyID());
-	else if (messenger.getMyID() !in aliveElevators)
-		createElevator(messenger.getMyID());
+	if (routor.getMyID() in deadElevators)
+		reviveElevator(routor.getMyID());
+	else if (routor.getMyID() !in aliveElevators)
+		createElevator(routor.getMyID());
 	foreach (int floor, order; internalOrders)
 	{
 		if (order)
 		{
-			addToList(messenger.getMyID(), button_type_t.INTERNAL, floor);
+			addToList(routor.getMyID(), button_type_t.INTERNAL, floor);
 			elev_set_button_lamp(elev_button_type_t.BUTTON_COMMAND, floor, 1);
 		}
 	}
@@ -486,11 +486,11 @@ void coordinatorThread(
                 /* Confirm any delegations */
 				case message_header_t.delegateOrder:
 				{
-					if (receivedFromNetwork.targetID == messenger.getMyID())
+					if (receivedFromNetwork.targetID == routor.getMyID())
 					{
 						message_t confirmingOrder;
 						confirmingOrder.header          = message_header_t.confirmOrder;
-						confirmingOrder.senderID        = messenger.getMyID();
+						confirmingOrder.senderID        = routor.getMyID();
 						confirmingOrder.targetID        = receivedFromNetwork.senderID;
 						confirmingOrder.orderFloor      = receivedFromNetwork.orderFloor;
 						confirmingOrder.orderDirection  = receivedFromNetwork.orderDirection;
@@ -512,13 +512,13 @@ void coordinatorThread(
 						receivedFromNetwork.orderFloor);
 
 					/* Update operators orders */
-                    if (receivedFromNetwork.senderID == messenger.getMyID())
+                    if (receivedFromNetwork.senderID == routor.getMyID())
                     {
-                        operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+                        operatorsOrdersChn.insert(getElevatorsOrders(routor.getMyID()));
                     }
 
 					/* Set light if order is local-internal or external */
-					if (receivedFromNetwork.targetID == messenger.getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
+					if (receivedFromNetwork.targetID == routor.getMyID() || receivedFromNetwork.orderDirection != button_type_t.INTERNAL)
 					{
 						elev_set_button_lamp(
 							cast(elev_button_type_t)receivedFromNetwork.orderDirection,
@@ -541,7 +541,7 @@ void coordinatorThread(
 						receivedFromNetwork.orderFloor);
 
 					/* Update operators orders */
-					operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+					operatorsOrdersChn.insert(getElevatorsOrders(routor.getMyID()));
 
 					/* Clear external lights */
 					elev_set_button_lamp(
@@ -554,7 +554,7 @@ void coordinatorThread(
 						0);
 
 					/* Clear internal light if we are the expeditor */
-					if (receivedFromNetwork.senderID == messenger.getMyID())
+					if (receivedFromNetwork.senderID == routor.getMyID())
 					{
 						elev_set_button_lamp(
 							elev_button_type_t.BUTTON_COMMAND,
@@ -573,7 +573,7 @@ void coordinatorThread(
 				{
 					debug writeln("coordinator: received sync request");
                     debug writeln(highestEligableID(receivedFromNetwork.senderID));
-					if ((messenger.getMyID() == highestEligableID(receivedFromNetwork.senderID)))
+					if ((routor.getMyID() == highestEligableID(receivedFromNetwork.senderID)))
 					{
 						message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
 						debug writeln("coordinator: sync message crote");
@@ -585,10 +585,10 @@ void coordinatorThread(
                 /* Add any old internal orders */
 				case message_header_t.syncInfo:
 				{
-					if (messenger.getMyID() == receivedFromNetwork.targetID)
+					if (routor.getMyID() == receivedFromNetwork.targetID)
 					{
 						syncMySet(receivedFromNetwork.syncInfo);
-						operatorsOrdersChn.insert(getElevatorsOrders(messenger.getMyID()));
+						operatorsOrdersChn.insert(getElevatorsOrders(routor.getMyID()));
 					}
 					break;
 				}
@@ -620,7 +620,7 @@ void coordinatorThread(
                 debug writeln(watchdogAlert.targetID, " ", alertedFloor);
 
 				reDistOrder.header = message_header_t.delegateOrder;
-				reDistOrder.senderID = messenger.getMyID();
+				reDistOrder.senderID = routor.getMyID();
 				reDistOrder.targetID = watchdogAlert.targetID;
 				reDistOrder.orderFloor = alertedFloor;
 				reDistOrder.timestamp = Clock.currTime().toUnixTime();

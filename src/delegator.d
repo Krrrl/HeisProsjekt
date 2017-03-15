@@ -6,13 +6,13 @@ import main,
        debugUtils,
        channels,
        coordinator,
-       messenger,
+       routor,
        iolib,
        operator;
 
 void createDelegateOrder(ref message_t newOrder)
 {
-	newOrder.senderID       = messenger.getMyID();
+	newOrder.senderID       = routor.getMyID();
 	newOrder.currentState   = getCurrentState();
 	newOrder.currentFloor   = getPreviousValidFloor();
 	newOrder.timestamp      = Clock.currTime().toUnixTime();
@@ -22,12 +22,7 @@ void createDelegateOrder(ref message_t newOrder)
 const private Duration confirmationTimeoutThreshold = dur!"msecs"(200);
 const private int timeoutCounterThreshold = 5;
 
-/*
- * @brief Thread responsible for delegating orders that haven't been delegated yet
- *
- * @param toElevatorChn: channel directed to this elevator
- * @param locallyPlacedOrdersChn: channel with
- */
+/* Thread responsible for delegating orders that haven't been delegated yet */
 void buttonCheckerThread(
         ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn)
 {
@@ -100,7 +95,7 @@ void delegatorThread(
 					{
 						if(orderConfirmationsReceivedChn.extract(confirmationReceived))
 						{
-							if(confirmationReceived.targetID == messenger.getMyID())
+							if(confirmationReceived.targetID == routor.getMyID())
 							{
 								debug writelnRed("Delegator speaking: received the appropriet confirmation within the timeoutThreshold, wooho!");
 								waitingForConfirmation = false;
