@@ -34,9 +34,6 @@ private long confirmedTimeoutThresholdms = 15;
 void watchdogThread(
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
 	ref shared NonBlockingChannel!message_t watchdogAlertChn,
-	ref shared NonBlockingChannel!message_t toNetworkChn,
-	ref shared NonBlockingChannel!message_t ordersToThiselevatorTAGChn,
-	ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
 	)
 {
 	debug writelnGreen("    [x] watchdogThread");

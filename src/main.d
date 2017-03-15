@@ -86,14 +86,10 @@ void main(string[] args)
 	watchdogTid = spawnLinked(
 		&watchdogThread,
 		watchdogFeedChn,
-		watchdogAlertChn,
-		toNetworkChn,
-		ordersToThisElevatorChn,
-		ordersToBeDelegatedChn);
+		watchdogAlertChn);
 
 	operatorTid = spawnLinked(
 		&operatorThread,
-		ordersToThisElevatorChn,
 		toNetworkChn,
 		operatorsOrdersChn);
 
