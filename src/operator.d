@@ -326,6 +326,7 @@ void operatorThread(
                     previousDirection = state_t.GOING_UP;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
+                    break;
 				}
                 if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_UP)
                 {
@@ -344,6 +345,7 @@ void operatorThread(
                     previousDirection = state_t.GOING_DOWN;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
+                    break;
 				}
                 if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_DOWN)
                 {
