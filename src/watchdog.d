@@ -63,7 +63,7 @@ void watchdogThread(
 
 					latestConfirms[senderID].orders[orderFloor] = true;
                     latestConfirms[senderID].timestamps[orderFloor] = timestamp;
-					debug writeln("Woof: confirm received from: ", senderID, "at time: ", timestamp);
+					debug writeln("watchdog: confirm received from: ", senderID, "at time: ", timestamp);
 					mostRecentConfirmTime[senderID] = timestamp;
 					break;
 				}
