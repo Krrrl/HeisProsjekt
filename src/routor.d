@@ -45,9 +45,6 @@ struct button_types_t
 	}
 }
 
-/*
- * @brief   Header used for switching content of message_t messages
- */
 enum message_header_t
 {
 	delegateOrder = 0,
@@ -59,9 +56,7 @@ enum message_header_t
 	watchdogAlert
 }
 
-/*
- * @brief   Message struct passed internally between threads and externally between elevators
- */
+/* Message struct passed internally between threads and externally between elevators */
 struct message_t
 {
 	message_header_t header;
@@ -110,9 +105,7 @@ message_t createSyncRequest()
 	return newSyncMessage;
 }
 
-/*
- * @brief   Thread responsible for passing messages between network module and remaining modules
- */
+ /* Thread responsible for passing messages between network module and remaining modules */
 void routorThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
@@ -152,7 +145,7 @@ void routorThread(
 		/* Only the network thread uses receive */
 		receiveTimeout(
 			msecs(1),
-			(message_t orderFromNetwork)
+        (message_t orderFromNetwork)
 		{
             if (orderFromNetwork.header != message_header_t.heartbeat)
             {
@@ -168,13 +161,13 @@ void routorThread(
             ordersToThisElevatorChn.insert(orderFromNetwork);
 
 		},
-			(PeerList list)
+        (PeerList list)
 		{
 			debug writelnBlue("routor: received PeerList from network");
 			updatePeerList(list);
 			peerListChn.insert(list);
 		},
-			(Variant v)
+        (Variant v)
 		{
 			debug writelnYellow("routor: received Variant from network");
 			debug writeln(">>> ", v);

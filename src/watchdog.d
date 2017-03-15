@@ -18,33 +18,23 @@ import main,
        iolib;
 
 
-struct watchdogTAG
+struct watchdogTag
 {
 	bool[int] orders;
 	long[int] timestamps;
 }
 
-private watchdogTAG[ubyte] latestConfirms;
+private watchdogTag[ubyte] latestConfirms;
 private long[ubyte] mostRecentConfirmTime;
-private watchdogTAG[ubyte] latestExpedites;
+private watchdogTag[ubyte] latestExpedites;
 private long[ubyte] mostRecentExpediteTime;
 
-//longest do-nothing interval allowed.
-private long confirmedTimeoutThreshold = 15;
+private long confirmedTimeoutThresholdms = 15;
 
-/*
- * @brief   Thread responsible for watching the livelihood of other elevatorTAGs
- * @details watchdogThread sends orphaned orders of timed out elevatorTAGs to the delegator
- *
- * @param toNetworkChn: channel directed to external network
- * @param ordersToThiselevatorTAGChn: channel directed to this elevatorTAG
- * @param elevatorTAGID: the ID of this elevatorTAG
- */
+/* Thread watching the livelihood of elevators with orders */
 void watchdogThread(
 	ref shared NonBlockingChannel!message_t watchdogFeedChn,
-
 	ref shared NonBlockingChannel!message_t watchdogAlertChn,
-
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThiselevatorTAGChn,
 	ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
@@ -64,37 +54,37 @@ void watchdogThread(
             long timestamp = receivedFromKeeper.timestamp;
 			switch(receivedFromKeeper.header)
 			{
-                /* Update  */
+                /* Update confirm lists */
 				case message_header_t.confirmOrder:
 				{
                     if (senderID !in latestConfirms)
                     {
-                        latestConfirms[senderID] = watchdogTAG();
+                        latestConfirms[senderID] = watchdogTag();
                     }
 
 					latestConfirms[senderID].orders[orderFloor] = true;
                     latestConfirms[senderID].timestamps[orderFloor] = timestamp;
-					debug writeln("Woof: CONFIRM received from: ", senderID, "at time: ", timestamp);
+					debug writeln("Woof: confirm received from: ", senderID, "at time: ", timestamp);
 					mostRecentConfirmTime[senderID] = timestamp;
 					break;
 				}
 
-                /*   */
+                /* Update expedite lists */
 				case message_header_t.expediteOrder:
 				{
                     if (senderID !in latestExpedites)
                     {
-                        latestExpedites[senderID] = watchdogTAG();
+                        latestExpedites[senderID] = watchdogTag();
                     }
                     latestExpedites[senderID].orders[orderFloor] = true;
                     latestExpedites[senderID].timestamps[orderFloor] = timestamp;
-					debug writeln("Woof: EXPEDITE received from: ", senderID, "at time: ", timestamp);
+					debug writeln("watchdog: expedite received from: ", senderID, "at time: ", timestamp);
 					mostRecentExpediteTime[senderID] = timestamp;
 					break;
 				}
 				default:
 				{
-					debug writelnRed("Woof: non-CONFIRM/EXPEDITE received??");
+					debug writelnRed("watchdog: non-confirm/expedite received");
 				}
 			}
 		}
@@ -106,7 +96,6 @@ void watchdogThread(
             {
                 if (id in latestExpedites)
                 {
-                    //debug writelnRed("id in exped");
                     if (floor in latestExpedites[id].orders)
                     {
                         if(latestExpedites[id].orders[floor] && elevatorTAG.orders[floor])
@@ -125,42 +114,40 @@ void watchdogThread(
             }
 		}
 
-		/* Checking for confirmed orders timeing-out, and alerting KeeperOfSets if there are any */
+		/* Checking for timed out orders, that will be reported to coordinator */
 		foreach(ubyte id, elevatorTAG; latestConfirms)
 		{
             bool replenished = false;
 			foreach(floor; elevatorTAG.orders.keys)
 			{
-				/* Check if there is a confirmed order on this floor, and if it has passed the
-                 * confirmedTimeoutThreshold without a repleneshing action in between */
-                //debug writeln(elevatorTAG);
-                //debug writeln(floor);
+				/* Check for confirmed order on each floor, and if it has passed the
+                 * confirmedTimeoutThresholdms without a repleneshing action in between */
 				if(elevatorTAG.orders[floor])
 				{
-					/* Checking for replenishing action */
+					/* Checking for replenishing activity */
                     if ((id in mostRecentConfirmTime) && (id in mostRecentConfirmTime))
                     {
-                        if(((Clock.currTime().toUnixTime() - mostRecentConfirmTime[id]) < confirmedTimeoutThreshold)
-                            || ((Clock.currTime().toUnixTime() - mostRecentExpediteTime[id]) < confirmedTimeoutThreshold))
+                        if(((Clock.currTime().toUnixTime() - mostRecentConfirmTime[id]) < confirmedTimeoutThresholdms)
+                            || ((Clock.currTime().toUnixTime() - mostRecentExpediteTime[id]) < confirmedTimeoutThresholdms))
                         {
                             replenished = true;
                         }
                     }
 
-					/* Checking for timed-out orders if not replenished */
+					/* Checking for timed-out orders if elevator isn't active */
                     if (!replenished)
                     {
-                        if((Clock.currTime().toUnixTime() - elevatorTAG.timestamps[floor]) > confirmedTimeoutThreshold)
+                        if((Clock.currTime().toUnixTime() - elevatorTAG.timestamps[floor]) > confirmedTimeoutThresholdms)
                         {
                             message_t orderAlert;
                             orderAlert.header = message_header_t.watchdogAlert;
                             orderAlert.targetID = id;
                             orderAlert.orderFloor = floor;
 
-                            debug writelnRed("watchdog: ALERTING A TIMEOUT");
+                            debug writelnRed("watchdog: Alerting coordinator about timeout");
                             debug writeln(orderAlert);
 
-                            /* Remove tracking */
+                            /* Remove confirm and expedite so they don't time out again */
                             elevatorTAG.orders[floor] = false;
                             latestExpedites[id].orders[floor] = false;
                             watchdogAlertChn.insert(orderAlert);

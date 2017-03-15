@@ -263,9 +263,7 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 	return elev_motor_direction_t.DIRN_STOP;
 }
 
-/*
- * @brief   Thread responsible for operating the lift and carrying out orders delegated to this elevator
- */
+ /* Thread controlling the lift and carrying out orders delegated to this elevator */
 void operatorThread(
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t toNetworkChn,
@@ -363,10 +361,11 @@ void operatorThread(
 					toNetworkChn.insert(createExpediteOrder(previousValidFloor));
 					timeAtFloorStop = Clock.currTime.toUnixTime();
 				}
-				/* Check where to go next */
+                /* Check for door timing out */
 				if (Clock.currTime.toUnixTime() > (timeAtFloorStop + stopDuration))
 				{
 					elev_set_door_open_lamp(0);
+                    /* Check where to go next */
                     elev_motor_direction_t directionToNextOrder = getDirectionToNextOrder(previousValidFloor);
 					if(directionToNextOrder == elev_motor_direction_t.DIRN_STOP)
 					{
