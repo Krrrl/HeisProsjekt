@@ -449,12 +449,12 @@ ubyte highestEligableID(ubyte senderID)
 	eligableElevators.remove(senderID);
 
     debug writeln(eligableElevators);
-	foreach (elevator; eligableElevators)
+	foreach (id; eligableElevators.keys)
 	{
-        debug writeln(elevator);
-		if (elevator.ID > tempID)
+        debug writeln(id);
+		if (id > tempID)
 		{
-			tempID = elevator.ID;
+			tempID = id;
 		}
 	}
 	return tempID;
