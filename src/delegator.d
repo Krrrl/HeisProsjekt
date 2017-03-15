@@ -22,12 +22,7 @@ void createDelegateOrder(ref message_t newOrder)
 const private Duration confirmationTimeoutThreshold = dur!"msecs"(200);
 const private int timeoutCounterThreshold = 5;
 
-/*
- * @brief Thread responsible for delegating orders that haven't been delegated yet
- *
- * @param toElevatorChn: channel directed to this elevator
- * @param locallyPlacedOrdersChn: channel with
- */
+/* thread responsible for reading orders from the hardware */
 void buttonCheckerThread(
         ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn)
 {
@@ -60,6 +55,12 @@ void buttonCheckerThread(
     }
 }
 
+/*
+ * @brief Thread responsible for delegating orders that haven't been delegated yet
+ *
+ * @param toElevatorChn: channel directed to this elevator
+ * @param locallyPlacedOrdersChn: channel with
+ */
 void delegatorThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
