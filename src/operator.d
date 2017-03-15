@@ -265,7 +265,6 @@ elev_motor_direction_t getDirectionToNextOrder(int floor)
 
  /* Thread controlling the lift and carrying out orders delegated to this elevator */
 void operatorThread(
-	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!orderList_t operatorsOrdersChn
 	)
