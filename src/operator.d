@@ -326,12 +326,12 @@ void operatorThread(
                     previousDirection = state_t.GOING_UP;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
-                    break;
 				}
-                if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_UP)
+                else if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_UP)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
                     previousDirection = state_t.GOING_UP;
+                    debug writelnYellow("Operator: now IDLE");
                     currentState = state_t.IDLE;
                 }
 				break;
@@ -345,12 +345,12 @@ void operatorThread(
                     previousDirection = state_t.GOING_DOWN;
 					currentState = state_t.FLOORSTOP;
 					debug writelnYellow("Operator: now FLOORSTOP");
-                    break;
 				}
-                if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_DOWN)
+                else if (getDirectionToNextOrder(currentFloor) != elev_motor_direction_t.DIRN_DOWN)
                 {
                     elev_set_motor_direction(elev_motor_direction_t.DIRN_STOP);
                     previousDirection = state_t.GOING_DOWN;
+                    debug writelnYellow("Operator: now IDLE");
                     currentState = state_t.IDLE;
                 }
 				break;

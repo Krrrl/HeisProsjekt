@@ -28,7 +28,6 @@ const private int timeoutCounterThreshold = 5;
  * @param toElevatorChn: channel directed to this elevator
  * @param locallyPlacedOrdersChn: channel with
  */
-
 void buttonCheckerThread(
         ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn)
 {
