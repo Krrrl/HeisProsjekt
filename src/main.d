@@ -12,7 +12,7 @@ import udp_bcast,
 import channels,
        debugUtils,
        coordinator,
-       messenger,
+       routor,
        watchdog,
        operator,
        delegator,
@@ -24,7 +24,7 @@ const nrOfPeers         = 3;
 
 void main(string[] args)
 {
-	/* Channel fra messenger til coordinator */
+	/* Channel fra routor til coordinator */
 	shared NonBlockingChannel!message_t ordersToThisElevatorChn = new NonBlockingChannel!message_t;
 	/* channel fra Keeper til network */
 	shared NonBlockingChannel!message_t toNetworkChn = new NonBlockingChannel!message_t;
@@ -32,7 +32,7 @@ void main(string[] args)
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
 	/* channel for putting orders that need to be delegated */
 	shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
-	/* channel for putting received order confirmations between delegator and messenger */
+	/* channel for putting received order confirmations between delegator and routor */
 	shared NonBlockingChannel!message_t orderConfirmationsReceivedChn = new NonBlockingChannel!message_t;
 	/* channel for passing peer list to Keeper */
 	shared NonBlockingChannel!PeerList peerListChn = new NonBlockingChannel!PeerList;
@@ -58,7 +58,7 @@ void main(string[] args)
 	}
 
 	debug writeln("Spawning Threads ...");
-	Tid messengerTid;
+	Tid routorTid;
 	Tid coordinatorTid;
 	Tid watchdogTid;
 	Tid operatorTid;
@@ -76,8 +76,8 @@ void main(string[] args)
 		operatorsOrdersChn,
 		peerListChn);
 
-	messengerTid = spawnLinked(
-		&messengerThread,
+	routorTid = spawnLinked(
+		&routorThread,
 		toNetworkChn,
 		ordersToThisElevatorChn,
 		orderConfirmationsReceivedChn,
@@ -114,14 +114,6 @@ void main(string[] args)
 		{
 			writelnRed("*** main: A THREAD HAS TERMINATED ***");
 			writeln(e);
-
-			// TODO: use Tid's to kill all threads
-			Array!Tid listOfTids;
-			listOfTids.insert(messengerTid);
-			listOfTids.insert(coordinatorTid);
-			listOfTids.insert(watchdogTid);
-			listOfTids.insert(operatorTid);
-			listOfTids.insert(delegatorTid);
 
 			/* Stop motor forever to avoid undefined behaviour */
 			while (true)

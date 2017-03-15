@@ -139,12 +139,7 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 {
 	if (orderDirection == button_type_t.INTERNAL)
 	{
-<<<<<<< HEAD
-		return messenger.getMyID();
-=======
-		debug writeln("giving myself the internal order for floor: ", orderFloor);
 		return routor.getMyID();
->>>>>>> d79f044f65860ab608c91cf916f5b45ca0a42581
 	}
 
 	elevator_t[ubyte] candidates = (cast(elevator_t[ubyte])aliveElevators).dup;
@@ -275,13 +270,8 @@ ubyte findMatch(int orderFloor, button_type_t orderDirection)
 			}
 		}
 	}
-<<<<<<< HEAD
     debug writelnRed("Found NO suitable elevator for order-> choosing myself");
-	return messenger.getMyID();
-=======
-    debug writelnRed("NO SUITABLE ELEVATOR. TAKING MYSELF");
 	return routor.getMyID();
->>>>>>> d79f044f65860ab608c91cf916f5b45ca0a42581
 }
 
 void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
