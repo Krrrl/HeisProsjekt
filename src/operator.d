@@ -293,7 +293,7 @@ void operatorThread(
 
 		/* Read floor sensors */
 		currentFloor = elev_get_floor_sensor_signal();
-		if (currentFloor != -1)
+		if ((currentFloor >= 0) && (currentFloor < main.nrOfFloors))
         {
             if (currentFloor != previousValidFloor)
             {
