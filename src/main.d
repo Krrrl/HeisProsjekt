@@ -7,10 +7,10 @@ import core.time,
        std.concurrency;
 
 import udp_bcast,
-       peers;
+       peers,
+       channels;
 
-import channels,
-       debugUtils,
+import debugUtils,
        coordinator,
        routor,
        watchdog,
@@ -24,22 +24,14 @@ const nrOfPeers         = 3;
 
 void main(string[] args)
 {
-	/* Channel fra routor til coordinator */
 	shared NonBlockingChannel!message_t ordersToThisElevatorChn = new NonBlockingChannel!message_t;
-	/* channel fra Keeper til network */
 	shared NonBlockingChannel!message_t toNetworkChn = new NonBlockingChannel!message_t;
-	/* channel mellom watchdog og Keeper */
 	shared NonBlockingChannel!message_t watchdogFeedChn = new NonBlockingChannel!message_t;
-	/* channel for putting orders that need to be delegated */
 	shared NonBlockingChannel!message_t ordersToBeDelegatedChn = new NonBlockingChannel!message_t;
-	/* channel for putting received order confirmations between delegator and routor */
 	shared NonBlockingChannel!message_t orderConfirmationsReceivedChn = new NonBlockingChannel!message_t;
-	/* channel for passing peer list to Keeper */
 	shared NonBlockingChannel!PeerList peerListChn = new NonBlockingChannel!PeerList;
-	/* channel for updating the operator on this elevators current orders*/
 	shared NonBlockingChannel!orderList_t operatorsOrdersChn = new
         NonBlockingChannel!orderList_t;
-    /* channel for watchdog-alerts to coordinator about timed-out orders */
     shared NonBlockingChannel!message_t watchdogAlertChn = new NonBlockingChannel!message_t;
 
 	debug writeln("Initializing lift hardware ...");
