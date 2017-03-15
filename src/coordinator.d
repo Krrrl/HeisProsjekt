@@ -451,7 +451,7 @@ ubyte highestEligableID(ubyte senderID)
     debug writeln(eligableElevators);
 	foreach (elevator; eligableElevators)
 	{
-		if (elevator.ID < tempID)
+		if (elevator.ID > tempID)
 		{
 			tempID = elevator.ID;
 		}
