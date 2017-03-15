@@ -41,20 +41,20 @@ void reviveElevator(ubyte id)
 {
 	aliveElevators[id] = deadElevators[id];
 	deadElevators.remove(id);
-	debug writeln("cordinator: elevator [", id, "] REVIVED");
+	debug writeln("coordinator: elevator [", id, "] REVIVED");
 }
 
 void createElevator(ubyte id)
 {
 	aliveElevators[id] = elevator_t();
-	debug writeln("cordinator: new elevator [", id, "] ALLOCATED");
+	debug writeln("coordinator: new elevator [", id, "] ALLOCATED");
 }
 
 void retireElevator(ubyte id, ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn)
 {
 	deadElevators[id] = aliveElevators[id];
 	aliveElevators.remove(id);
-	debug writeln("cordinator: elevator [", id, "] RETIRED");
+	debug writeln("coordinator: elevator [", id, "] RETIRED");
 
 
 	message_t reDelegationOrder;
@@ -306,7 +306,7 @@ void addToList(ubyte targetID, button_type_t orderDirection, int orderFloor)
 	if (targetID in deadElevators)
 	{
 		// Do what? Error handling?
-		debug writelnYellow("cordinator: tried to add to inactive's list");
+		debug writelnYellow("coordinator: tried to add to inactive's list");
 		return;
 	}
 	if (targetID !in aliveElevators)
@@ -373,7 +373,7 @@ orderList_t getElevatorsOrders(ubyte id)
 	}
 	else
 	{
-		debug writelnYellow("cordinator: attempt to get nonalive elevators orders");
+		debug writelnYellow("coordinator: attempt to get nonalive elevators orders");
 	}
 	return orders;
 }
@@ -423,7 +423,7 @@ message_t createSyncInfo(ubyte targetID)
 
 void syncMySet(shared int[main.nrOfFloors] internalOrders)
 {
-	debug writeln("cordinator: syncing my sets with ", internalOrders);
+	debug writeln("coordinator: syncing my sets with ", internalOrders);
 	if (messenger.getMyID() in deadElevators)
 		reviveElevator(messenger.getMyID());
 	else if (messenger.getMyID() !in aliveElevators)
@@ -456,7 +456,7 @@ ubyte highestEligableID(ubyte senderID)
 	return tempID;
 }
 
-void cordinatorThread(
+void coordinatorThread(
 	ref shared NonBlockingChannel!message_t toNetworkChn,
 	ref shared NonBlockingChannel!message_t ordersToThisElevatorChn,
 	ref shared NonBlockingChannel!message_t ordersToBeDelegatedChn,
@@ -466,7 +466,7 @@ void cordinatorThread(
 	ref shared NonBlockingChannel!PeerList peerListChn
 	)
 {
-	debug writelnGreen("    [x] cordinatorThread");
+	debug writelnGreen("    [x] coordinatorThread");
 
 	message_t receivedFromNetwork;
 	message_t watchdogAlert;
@@ -566,12 +566,12 @@ void cordinatorThread(
                 /* Give revived elevators their old internal orders */
 				case message_header_t.syncRequest:
 				{
-					debug writeln("cordinator: received sync request");
+					debug writeln("coordinator: received sync request");
                     debug writeln(highestEligableID(receivedFromNetwork.senderID));
 					if ((messenger.getMyID() == highestEligableID(receivedFromNetwork.senderID)))
 					{
 						message_t syncInfo = createSyncInfo(receivedFromNetwork.senderID);
-						debug writeln("cordinator: sync message crote");
+						debug writeln("coordinator: sync message crote");
 						toNetworkChn.insert(syncInfo);
 					}
 					break;
@@ -611,7 +611,7 @@ void cordinatorThread(
 			if(watchdogAlert.targetID in aliveElevators)
 			{
                 int alertedFloor = watchdogAlert.orderFloor;
-                debug writelnRed("cordinator: watchdogalert at target and floor");
+                debug writelnRed("coordinator: watchdogalert at target and floor");
                 debug writeln(watchdogAlert.targetID, " ", alertedFloor);
 
 				reDistOrder.header = message_header_t.delegateOrder;
@@ -626,7 +626,7 @@ void cordinatorThread(
                     if(aliveElevators[watchdogAlert.targetID].downQueue[alertedFloor])
                     {
                         reDistOrder.orderDirection = button_type_t.DOWN;
-                        debug writelnRed("cordinator: watchdog alert down");
+                        debug writelnRed("coordinator: watchdog alert down");
                         ordersToBeDelegatedChn.insert(reDistOrder);
 
                     }
@@ -636,7 +636,7 @@ void cordinatorThread(
                     if(aliveElevators[watchdogAlert.targetID].upQueue[alertedFloor])
                     {
                         reDistOrder.orderDirection = button_type_t.UP;
-                        debug writelnRed("cordinator: watchdog alert up");
+                        debug writelnRed("coordinator: watchdog alert up");
                         ordersToBeDelegatedChn.insert(reDistOrder);
 
                     }
@@ -646,12 +646,12 @@ void cordinatorThread(
                     if(aliveElevators[watchdogAlert.targetID].internalQueue[alertedFloor])
                     {
                         reDistOrder.orderDirection = button_type_t.INTERNAL;
-                        debug writelnRed("cordinator: watchdog alert internal");
+                        debug writelnRed("coordinator: watchdog alert internal");
                         toNetworkChn.insert(reDistOrder);
 
                     }
                 }
-                debug writelnRed("cordinator: watchdog alert redelegated?");
+                debug writelnRed("coordinator: watchdog alert redelegated?");
 			}
 		}
 
@@ -673,8 +673,8 @@ void cordinatorThread(
 					retireElevator(id, ordersToBeDelegatedChn);
                 }
             }
-			debug writeln("cordinator: alive ", aliveElevators.keys);
-			debug writeln("cordinator: inactive ", deadElevators.keys);
+			debug writeln("coordinator: alive ", aliveElevators.keys);
+			debug writeln("coordinator: inactive ", deadElevators.keys);
 		}
 	}
 }
