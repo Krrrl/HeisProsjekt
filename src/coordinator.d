@@ -443,9 +443,12 @@ ubyte highestEligableID(ubyte senderID)
 	ubyte tempID = 0;
 	elevator_t[ubyte] eligableElevators = (cast(elevator_t[ubyte])aliveElevators).dup;
 
+    debug writeln("eligable?");
+    debug writeln(eligableElevators);
 	/* Remove senderID from eligable elevators */
 	eligableElevators.remove(senderID);
 
+    debug writeln(eligableElevators);
 	foreach (elevator; eligableElevators)
 	{
 		if (elevator.ID < tempID)
